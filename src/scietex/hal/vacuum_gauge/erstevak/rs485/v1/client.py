@@ -14,6 +14,7 @@ Classes:
 """
 
 from typing import Optional, Union
+import sys
 import asyncio
 from logging import Logger
 
@@ -35,6 +36,15 @@ from .data import (
 from .framer import ErstevakASCIIFramer, _check_checksum
 from .decoder import ErstevakDecodePDU
 from .request import ErstevakRequest
+
+
+# Determine the correct TimeoutError based on Python version
+if sys.version_info >= (3, 11):
+    TimeoutErrorAlias = asyncio.TimeoutError
+else:
+    import asyncio.exceptions
+
+    TimeoutErrorAlias = asyncio.exceptions.TimeoutError
 
 
 class ErstevakVacuumGauge(RS485Client):
@@ -186,7 +196,7 @@ class ErstevakVacuumGauge(RS485Client):
                 if response and hasattr(response, "data"):
                     self.logger.debug("Response: %s", response.data)
                     result = response.data
-            except TimeoutError:
+            except TimeoutErrorAlias:
                 result = None
         elif self.backend == "pyserial":
             custom_framer = ErstevakASCIIFramer(ErstevakDecodePDU(is_server=False))
