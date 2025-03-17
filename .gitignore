@@ -1,0 +1,8 @@
+.idea
+.tox
+.venv
+.pytest_cache
+.mypy_cache
+src/scietex.hal.vacuum_gauge.egg-info
+.coverage
+htmlcov
