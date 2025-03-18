@@ -19,7 +19,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "numpy >= 2.0.0, < 3.0.0",
-    "scietex.hal.analog_sensor >= 1.0.0, < 2.0.0",
+    "scietex.hal.analog-sensor >= 1.0.0, < 2.0.0",
     "scietex.hal.serial >= 1.0.0, < 2.0.0",
 ]
 

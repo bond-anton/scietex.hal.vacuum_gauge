@@ -33,7 +33,8 @@ from .data import (
     _calibration_encode,
     _calibration_decode,
 )
-from .framer import ErstevakASCIIFramer, _check_checksum
+from ..checksum import check_checksum
+from .framer import ErstevakASCIIFramer
 from .decoder import ErstevakDecodePDU
 from .request import ErstevakRequest
 
@@ -250,7 +251,7 @@ class ErstevakVacuumGauge(RS485Client):
         result: dict = {"addr": None, "cmd": None, "data": None, "crc": None}
         self.logger.debug("Parsing response %s", response)
         if response:
-            if _check_checksum(response[:-2], response[-2]):
+            if check_checksum(response[:-2], response[-2]):
                 response_data: str = response.decode()[:-2]
                 r_address: int = int(response_data[:3])
                 if self.address == r_address:

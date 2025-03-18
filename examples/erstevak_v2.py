@@ -1,20 +1,26 @@
 """Test Erstevak RS485 V2 communication."""
 
-import serial
+try:
+    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v2.request import ErstevakRequest, AccessCode
+    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v2.decoder import ErstevakDecodePDU
+    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v2.framer import ErstevakASCIIFramer
+except ModuleNotFoundError:
+    from scietex.hal.vacuum_gauge.erstevak.rs485.v2.request import ErstevakRequest, AccessCode
+    from scietex.hal.vacuum_gauge.erstevak.rs485.v2.decoder import ErstevakDecodePDU
+    from scietex.hal.vacuum_gauge.erstevak.rs485.v2.framer import ErstevakASCIIFramer
 
-from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 
 if __name__ == "__main__":
-    con_params = Config("/dev/cu.usbserial-142310", baudrate=19200, timeout=0.1)
-    con = serial.Serial(
-        port=con_params.port,
-        baudrate=con_params.baudrate,
-        bytesize=con_params.bytesize,
-        stopbits=con_params.stopbits,
-        parity=con_params.parity,
-        timeout=con_params.timeout,
-        inter_byte_timeout=0.01,
-    )
-    con.write(b"0010MV00D\r")
-    serial_response = con.readline()
-    print(f"RESPONSE: {serial_response}")
+    # b"0010MV00D\r"
+    DATA = None
+    # DATA = b"1.2e-3"
+    req = ErstevakRequest(AccessCode.READ, command="MV", data=DATA)
+    encoded = req.encode()
+    print(f"REQUEST: {req.encode(), req.function_code, req.rtu_frame_size}")
+    req.decode(encoded)
+    print(req.data, req.function_code, req.command, req.rtu_frame_size)
+
+    framer = ErstevakASCIIFramer(ErstevakDecodePDU(is_server=False))
+    frame_encoded = framer.encode(data=req.encode(), device_id=req.dev_id, _tid=0)
+    print(frame_encoded)
+    print(framer.decode(frame_encoded))

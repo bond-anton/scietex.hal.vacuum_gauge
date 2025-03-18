@@ -12,19 +12,13 @@ from pymodbus.pdu import ModbusPDU
 try:
     from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.request import ErstevakRequest
     from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.decoder import ErstevakDecodePDU
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer import (
-        ErstevakASCIIFramer,
-        _calc_checksum,
-        _check_checksum,
-    )
+    from src.scietex.hal.vacuum_gauge.erstevak.rs485.checksum import calc_checksum, check_checksum
+    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer import ErstevakASCIIFramer
 except ModuleNotFoundError:
     from scietex.hal.vacuum_gauge.erstevak.rs485.v1.request import ErstevakRequest
     from scietex.hal.vacuum_gauge.erstevak.rs485.v1.decoder import ErstevakDecodePDU
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer import (
-        ErstevakASCIIFramer,
-        _calc_checksum,
-        _check_checksum,
-    )
+    from scietex.hal.vacuum_gauge.erstevak.rs485.checksum import calc_checksum, check_checksum
+    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer import ErstevakASCIIFramer
 
 
 @pytest.fixture
@@ -44,26 +38,26 @@ def framer(decoder):
 
 
 # Tests for helper functions
-def test_calc_checksum():
+def testcalc_checksum():
     """Test checksum calculation."""
     msg = b"001T"  # Device ID "001" + data "T"
-    checksum = _calc_checksum(msg)
+    checksum = calc_checksum(msg)
     assert checksum == sum([48, 48, 49, ord("T")]) % 64 + 64  # ASCII: 0=48, 1=49
     assert 64 <= checksum <= 127  # Within printable ASCII range
 
 
-def test_check_checksum_valid():
+def testcheck_checksum_valid():
     """Test checksum verification with a valid checksum."""
     msg = b"001T"
-    checksum = _calc_checksum(msg)
-    assert _check_checksum(msg, checksum) is True
+    checksum = calc_checksum(msg)
+    assert check_checksum(msg, checksum) is True
 
 
-def test_check_checksum_invalid():
+def testcheck_checksum_invalid():
     """Test checksum verification with an invalid checksum."""
     msg = b"001T"
-    checksum = _calc_checksum(msg) + 1  # Deliberately wrong
-    assert _check_checksum(msg, checksum) is False
+    checksum = calc_checksum(msg) + 1  # Deliberately wrong
+    assert check_checksum(msg, checksum) is False
 
 
 # Tests for ErstevakASCIIFramer
@@ -72,7 +66,7 @@ def test_framer_init(framer):
     """Test initialization of ErstevakASCIIFramer."""
     assert framer.START == b""
     assert framer.END == b"\r"
-    assert framer.MIN_SIZE == 4
+    assert framer.MIN_SIZE == 6
     assert isinstance(framer.decoder, ErstevakDecodePDU)
 
 
@@ -81,7 +75,7 @@ def test_decode_complete_frame(decoder):
     """Test decoding a complete frame."""
     framer = ErstevakASCIIFramer(decoder)
     msg = b"001T"
-    data = msg + bytes([_calc_checksum(msg)]) + b"\r"
+    data = msg + bytes([calc_checksum(msg)]) + b"\r"
     used_len, dev_id, tid, frame_data = framer.decode(data)
     assert used_len == 6
     assert dev_id == 1
@@ -130,9 +124,9 @@ def test_decode_multiple_frames(decoder):
     """Test decoding multiple frames in one data chunk."""
     framer = ErstevakASCIIFramer(decoder)
     msg1 = b"001S"
-    msg1 = msg1 + bytes([_calc_checksum(msg1)]) + b"\r"
+    msg1 = msg1 + bytes([calc_checksum(msg1)]) + b"\r"
     msg2 = b"002M"
-    msg2 = msg2 + bytes([_calc_checksum(msg2)]) + b"\r"
+    msg2 = msg2 + bytes([calc_checksum(msg2)]) + b"\r"
     data = msg1 + msg2
     # First frame: "00103"
     used_len1, dev_id1, _, frame_data1 = framer.decode(data)
@@ -153,9 +147,9 @@ def test_encode_frame(decoder):
     data = b"S"
     device_id = 1
     frame = framer.encode(data, device_id, 0)
-    expected_checksum = _calc_checksum(b"001S")
+    expected_checksum = calc_checksum(b"001S")
     assert frame == b"001S" + bytes([expected_checksum]) + b"\r"
-    assert _check_checksum(b"001S", expected_checksum)
+    assert check_checksum(b"001S", expected_checksum)
 
 
 # pylint: disable=redefined-outer-name,protected-access
@@ -165,16 +159,16 @@ def test_encode_different_device_id(decoder):
     data = b"M"
     device_id = 123
     frame = framer.encode(data, device_id, 0)
-    expected_checksum = _calc_checksum(b"123M")
+    expected_checksum = calc_checksum(b"123M")
     assert frame == b"123M" + bytes([expected_checksum]) + b"\r"
-    assert _check_checksum(b"123M", expected_checksum)
+    assert check_checksum(b"123M", expected_checksum)
 
 
 # pylint: disable=redefined-outer-name,protected-access
 def test_process_incoming_frame_valid(framer):
     """Test processing a valid incoming frame."""
     data = b"001T"
-    data = data + bytes([_calc_checksum(data)]) + b"\r"
+    data = data + bytes([calc_checksum(data)]) + b"\r"
     used_len, result = framer._processIncomingFrame(data)
     assert used_len == 6
     assert isinstance(result, ModbusPDU)
