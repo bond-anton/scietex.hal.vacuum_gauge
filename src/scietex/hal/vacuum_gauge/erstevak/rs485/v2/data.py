@@ -282,8 +282,8 @@ def decode_operating_hours(oh_data: Optional[str]) -> Optional[dict[str, Union[f
     """Decode operating-hours response."""
     if oh_data:
         result = {"gauge": 0.0, "cathode": None}
-        if "D" in oh_data:
-            g, c = oh_data.split("D")
+        if "C" in oh_data:
+            g, c = oh_data.split("C")
             result["gauge"] = float(g) / 4
             result["cathode"] = float(c) / 4
         else:
@@ -295,7 +295,9 @@ def decode_operating_hours(oh_data: Optional[str]) -> Optional[dict[str, Union[f
 def decode_wear_status(pm_data: Optional[str]) -> Optional[dict[str, Union[float, str, None]]]:
     """Decode sensor wear estimation response."""
     if pm_data:
-        result: Optional[dict[str, Union[float, str, None]]] = None
+        if pm_data == "NO_DEF":
+            return None
+        result: Optional[dict[str, Union[float, str, None]]]
         if "A" in pm_data:  # Pirani W[int]A[int]
             result = {"wear": 0.0, "status": None, "hours_since_calibration": None}
             w, a = pm_data.split("A")
