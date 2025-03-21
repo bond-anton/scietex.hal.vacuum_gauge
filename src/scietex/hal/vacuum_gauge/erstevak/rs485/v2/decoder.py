@@ -59,18 +59,20 @@ class ErstevakDecodePDU(ErstevakRS485DecodePDU):
         if not frame:
             return None
         try:
-            access_code: AccessCode = AccessCode.from_int(frame[0])
+            access_code_int: int = int(chr(frame[0]))
+            if access_code_int not in (6, 7):
+                access_code_int -= 1
+            access_code: AccessCode = AccessCode.from_int(access_code_int)
             command: str = frame[1:3].decode()
-
             pdu_type = self.lookupPduClass(frame)
             if pdu_type is None:
                 return None
             pdu_class = pdu_type(
                 access_code=access_code,  # type: ignore[call-arg]
                 command=command,  # type: ignore[call-arg]
-                data=frame[3:],  # type: ignore[call-arg]
+                data=frame,  # type: ignore[call-arg]
             )
-            pdu_class.decode(frame[3:])
+            pdu_class.decode(frame)
             pdu_class.registers = list(frame)[3:]
             return pdu_class
         except (ModbusException, ValueError, IndexError):

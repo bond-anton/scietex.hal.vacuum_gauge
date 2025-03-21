@@ -11,6 +11,7 @@ from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 from scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakVacuumGauge
 
 
+# pylint: disable=duplicate-code
 # pylint: disable=too-many-statements
 async def main(address: int, client_con: Config, logger: Optional[logging.Logger] = None):
     """Main coroutine"""

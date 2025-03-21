@@ -12,6 +12,7 @@ Classes:
     ErstevakASCIIFramer: A custom ASCII framer for Erstevak RS485 protocol V2.
 """
 
+from pymodbus.pdu import ModbusPDU
 from ..framer import ErstevakRS485ASCIIFramer
 
 
@@ -27,3 +28,11 @@ class ErstevakASCIIFramer(ErstevakRS485ASCIIFramer):
     """
 
     MIN_SIZE = 10
+
+    def buildFrame(self, message: ModbusPDU) -> bytes:
+        """Create a ready to send modbus packet.
+
+        :param message: The populated request/response to send
+        """
+        frame = self.encode(message.encode(), message.dev_id, message.transaction_id)
+        return frame

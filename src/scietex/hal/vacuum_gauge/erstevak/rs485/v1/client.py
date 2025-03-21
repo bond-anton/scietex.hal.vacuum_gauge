@@ -114,7 +114,7 @@ class ErstevakVacuumGauge(RS485Client):
         Reads and returns a dictionary of gauge data (currently only pressure).
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,duplicate-code
     def __init__(
         self,
         connection_config: Union[SerialConnectionConfigModel, ModbusSerialConnectionConfigModel],
@@ -165,6 +165,7 @@ class ErstevakVacuumGauge(RS485Client):
         if backend == "pyserial":
             self.backend = "pyserial"
 
+    # pylint: disable=duplicate-code
     async def request_gauge(self, command: str, data: Optional[bytes] = None) -> Optional[str]:
         """
         Send a command to the gauge and return the response data.

@@ -37,7 +37,7 @@ class AccessCode(Enum):
     @classmethod
     def from_int(cls, value: int) -> "AccessCode":
         """
-        Converts a integer value to the corresponding `AccessCode` member.
+        Converts an integer value to the corresponding `AccessCode` member.
 
         Args:
             value (int): The integer code.
@@ -54,6 +54,59 @@ class AccessCode(Enum):
         raise ValueError(
             f"Unknown access code: {value}. Supported values are: {[m.value for m in cls]}"
         )
+
+
+class ErrorMessage(Enum):
+    """Error messages for RS485 V2 protocol."""
+
+    NO_DEF = "NO_DEF"
+    LOGIC = "_LOGIC"
+    RANGE = "_RANGE"
+    SENSOR_ERROR = "ERROR1"
+    SYNTAX = "SYNTAX"
+    LENGTH = "LENGTH"
+    CD_RE = "_CD_RE"
+    EP_RE = "_EP_RE"
+    UNSUPPORTED_DATA = "_UNSUP"
+    SENSOR_DISABLED = "_SEDIS"
+
+    @classmethod
+    def from_str(cls, value: str) -> "ErrorMessage":
+        """
+        Converts a string value to the corresponding `ErrorMessage` member.
+
+        Args:
+            value (str): The error message.
+
+        Returns:
+            ErrorMessage: The corresponding `ErrorMessage` member.
+
+        Raises:
+            ValueError: If the string value does not match any supported error message.
+        """
+        for member in cls:
+            if member.value == value:
+                return member
+        raise ValueError(
+            f"Unknown error message: {value}. Supported values are: {[m.value for m in cls]}"
+        )
+
+    def description(self) -> str:
+        """Error description."""
+        description: dict[str, str] = {
+            "NO_DEF": "Command is not valid (not defined) for device.",
+            "_LOGIC": "Access Code is not valid or execution of command is not logical.",
+            "_RANGE": "Value in send request is out of range.",
+            "ERROR1": "Sensor is defect or stacked out.",
+            "SYNTAX": "Command is valid, but the syntax in data is wrong "
+            "or the selected mode in data is not valid for your device.",
+            "LENGTH": "Command is valid, but the length of data is out of expected range.",
+            "_CD_RE": "Calibration data read error.",
+            "_EP_RE": "EEPROM Read Error.",
+            "_UNSUP": "Unsupported Data (not valid value).",
+            "_SEDIS": "Sensor element disabled.",
+        }
+        return description[self.value]
 
 
 class ErstevakRequest(ModbusPDU):
@@ -146,7 +199,7 @@ class ErstevakRequest(ModbusPDU):
 
     @data.setter
     def data(self, new_data: str) -> None:
-        self.__data = new_data[:6]
+        self.__data = new_data
         self.rtu_frame_size = len(self.__data)
 
     def encode(self) -> bytes:
@@ -178,6 +231,8 @@ class ErstevakRequest(ModbusPDU):
             The byte string to decode (e.g., b"123456").
         """
         self.function_code = int(data[0:1], 10)
+        if self.function_code not in (6, 7):
+            self.function_code -= 1
         self.command = data[1:3].decode()
         self.rtu_frame_size = int(data[3:5], 10)
         self.data = data[5 : 5 + self.rtu_frame_size].decode()
