@@ -1,26 +1,26 @@
 """
-Erstevak RS485 Version 2 ASCII Framer Module.
+Thyracont RS485 Version 2 ASCII Framer Module.
 
-This module implements a custom ASCII framer for Erstevak RS485 protocol V2,
-extending the `pymodbus` `FramerAscii` class. It is designed to handle Erstevak-specific
+This module implements a custom ASCII framer for Thyracont RS485 protocol V2,
+extending the `pymodbus` `FramerAscii` class. It is designed to handle Thyracont-specific
 Application Data Units (ADUs) without a traditional start byte, using a 3-byte device ID,
 a custom checksum, and a carriage return (`\\r`) as the end delimiter. The framer supports
 encoding and decoding of Modbus messages with a minimum frame size of 10 bytes, tailored for
-Erstevak vacuum gauge RS485 V2 communication syntax.
+Thyracont vacuum gauge RS485 V2 communication syntax.
 
 Classes:
-    ErstevakASCIIFramer: A custom ASCII framer for Erstevak RS485 protocol V2.
+    ThyracontASCIIFramer: A custom ASCII framer for Thyracont RS485 protocol V2.
 """
 
 from pymodbus.pdu import ModbusPDU
-from ..framer import ErstevakRS485ASCIIFramer
+from ..framer import ThyracontRS485ASCIIFramer
 
 
-class ErstevakASCIIFramer(ErstevakRS485ASCIIFramer):
+class ThyracontASCIIFramer(ThyracontRS485ASCIIFramer):
     """
-    Erstevak custom protocol ASCII framer.
+    Thyracont custom protocol ASCII framer.
 
-    A custom ASCII framer for Erstevak RS485 protocol V2, extending `pymodbus.framer.FramerAscii`.
+    A custom ASCII framer for Thyracont RS485 protocol V2, extending `pymodbus.framer.FramerAscii`.
     Unlike the standard Modbus ASCII framer, it uses no start byte, a 3-digit device ID at the
     beginning of each frame, a custom single-byte checksum, and a carriage return (`\\r`) as the
     end delimiter. The minimum frame size is set to 10 bytes according to message format of V2

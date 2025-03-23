@@ -1,5 +1,5 @@
 """
-Erstevak RS485 ASCII checksum calculation functions.
+Checksum calculation functions.
 
 Functions:
     _calc_checksum(msg: bytes) -> int: Calculates a custom checksum for a message.

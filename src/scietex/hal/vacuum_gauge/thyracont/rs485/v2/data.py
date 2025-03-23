@@ -1,9 +1,96 @@
 """
-Erstevak RS485 Version 2 Data Module.
+Thyracont RS485 Version 2 Data Module.
 """
 
 from typing import Optional, Union
 from enum import Enum
+
+
+class AccessCode(Enum):
+    """Access codes for RS485 V2 protocol."""
+
+    # Access Codes for Send Sequences (Master->Transmitter).
+    READ = 0
+    WRITE = 2
+    FACTORY_DEFAULT = 4
+    BINARY = 8
+    # Special Access Codes for Receive Sequences (Transmitter->Master).
+    STREAMING = 6
+    ERROR = 7
+
+    @classmethod
+    def from_int(cls, value: int) -> "AccessCode":
+        """
+        Converts an integer value to the corresponding `AccessCode` member.
+
+        Args:
+            value (int): The integer code.
+
+        Returns:
+            AccessCode: The corresponding `AccessCode` member.
+
+        Raises:
+            ValueError: If the integer value does not match any supported access code.
+        """
+        for member in cls:
+            if member.value == value:
+                return member
+        raise ValueError(
+            f"Unknown access code: {value}. Supported values are: {[m.value for m in cls]}"
+        )
+
+
+class ErrorMessage(Enum):
+    """Error messages for RS485 V2 protocol."""
+
+    NO_DEF = "NO_DEF"
+    LOGIC = "_LOGIC"
+    RANGE = "_RANGE"
+    SENSOR_ERROR = "ERROR1"
+    SYNTAX = "SYNTAX"
+    LENGTH = "LENGTH"
+    CD_RE = "_CD_RE"
+    EP_RE = "_EP_RE"
+    UNSUPPORTED_DATA = "_UNSUP"
+    SENSOR_DISABLED = "_SEDIS"
+
+    @classmethod
+    def from_str(cls, value: str) -> "ErrorMessage":
+        """
+        Converts a string value to the corresponding `ErrorMessage` member.
+
+        Args:
+            value (str): The error message.
+
+        Returns:
+            ErrorMessage: The corresponding `ErrorMessage` member.
+
+        Raises:
+            ValueError: If the string value does not match any supported error message.
+        """
+        for member in cls:
+            if member.value == value:
+                return member
+        raise ValueError(
+            f"Unknown error message: {value}. Supported values are: {[m.value for m in cls]}"
+        )
+
+    def description(self) -> str:
+        """Error description."""
+        description: dict[str, str] = {
+            "NO_DEF": "Command is not valid (not defined) for device.",
+            "_LOGIC": "Access Code is not valid or execution of command is not logical.",
+            "_RANGE": "Value in send request is out of range.",
+            "ERROR1": "Sensor is defect or stacked out.",
+            "SYNTAX": "Command is valid, but the syntax in data is wrong "
+            "or the selected mode in data is not valid for your device.",
+            "LENGTH": "Command is valid, but the length of data is out of expected range.",
+            "_CD_RE": "Calibration data read error.",
+            "_EP_RE": "EEPROM Read Error.",
+            "_UNSUP": "Unsupported Data (not valid value).",
+            "_SEDIS": "Sensor element disabled.",
+        }
+        return description[self.value]
 
 
 class Sensor(Enum):
@@ -281,48 +368,52 @@ def encode_tab_output_characteristic(oc: dict[str, Union[str, int, float, None]]
 def decode_operating_hours(oh_data: Optional[str]) -> Optional[dict[str, Union[float, None]]]:
     """Decode operating-hours response."""
     if oh_data:
-        result = {"gauge": 0.0, "cathode": None}
-        if "C" in oh_data:
-            g, c = oh_data.split("C")
-            result["gauge"] = float(g) / 4
-            result["cathode"] = float(c) / 4
-        else:
-            result["gauge"] = float(oh_data) / 4
-        return result
+        try:
+            result = {"gauge": 0.0, "cathode": None}
+            if "C" in oh_data:
+                g, c = oh_data.split("C")
+                result["gauge"] = float(g) / 4
+                result["cathode"] = float(c) / 4
+            else:
+                result["gauge"] = float(oh_data) / 4
+            return result
+        except (TypeError, ValueError):
+            pass
     return None
 
 
 def decode_wear_status(pm_data: Optional[str]) -> Optional[dict[str, Union[float, str, None]]]:
     """Decode sensor wear estimation response."""
     if pm_data:
-        if pm_data == "NO_DEF":
-            return None
-        result: Optional[dict[str, Union[float, str, None]]]
-        if "A" in pm_data:  # Pirani W[int]A[int]
-            result = {"wear": 0.0, "status": None, "hours_since_calibration": None}
-            w, a = pm_data.split("A")
-            _, w = w.split("W")
-            wear = float(w)
-            if wear == 32767:
-                result["status"] = "not calculated"
-            elif wear < 0:
-                result["status"] = "corrosion"
-            else:
-                result["status"] = "contamination"
-            result["wear"] = abs(wear)
-            result["hours_since_zero_adjustment"] = float(a) / 4
-        elif "S" in pm_data:  # Hot cathode F[int]S[int]
-            result = {
-                "wear_1": 0.0,
-                "wear_2": 0.0,
-            }
-            f, s = pm_data.split("S")
-            _, f = f.split("F")
-            result["wear_1"] = float(f)
-            result["wear_2"] = float(s)
-        else:  # Cold cathode W[int]
-            result = {"wear": float(pm_data[1:])}
-        return result
+        try:
+            result: Optional[dict[str, Union[float, str, None]]]
+            if "A" in pm_data:  # Pirani W[int]A[int]
+                result = {"wear": 0.0, "status": None, "hours_since_calibration": None}
+                w, a = pm_data.split("A")
+                _, w = w.split("W")
+                wear = float(w)
+                if wear == 32767:
+                    result["status"] = "not calculated"
+                elif wear < 0:
+                    result["status"] = "corrosion"
+                else:
+                    result["status"] = "contamination"
+                result["wear"] = abs(wear)
+                result["hours_since_zero_adjustment"] = float(a) / 4
+            elif "S" in pm_data:  # Hot cathode F[int]S[int]
+                result = {
+                    "wear_1": 0.0,
+                    "wear_2": 0.0,
+                }
+                f, s = pm_data.split("S")
+                _, f = f.split("F")
+                result["wear_1"] = float(f)
+                result["wear_2"] = float(s)
+            else:  # Cold cathode W[int]
+                result = {"wear": float(pm_data[1:])}
+            return result
+        except (TypeError, ValueError):
+            pass
     return None
 
 

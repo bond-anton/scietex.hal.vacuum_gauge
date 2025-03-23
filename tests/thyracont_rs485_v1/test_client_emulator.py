@@ -1,8 +1,8 @@
 """
-Tests for scietex.hal.vacuum_gauge.erstevak.rs485.v1.client and emulation modules.
+Tests for scietex.hal.vacuum_gauge.Thyracont.rs485.v1.client and emulation modules.
 
-This module tests the ErstevakVacuumGauge client against the ErstevakEmulator server, ensuring
-correct communication over the Erstevak RS485 protocol for pressure measurement, calibration,
+This module tests the ThyracontVacuumGauge client against the ThyracontEmulator server, ensuring
+correct communication over the Thyracont RS485 protocol for pressure measurement, calibration,
 setpoints, and Penning gauge control using both 'pymodbus' and 'pyserial' backends.
 """
 
@@ -14,11 +14,11 @@ from scietex.hal.serial.config import ModbusSerialConnectionConfig
 from scietex.hal.serial import VirtualSerialPair
 
 try:
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakVacuumGauge
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation import ErstevakEmulator
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontVacuumGauge
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation import ThyracontEmulator
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakVacuumGauge
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation import ErstevakEmulator
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontVacuumGauge
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation import ThyracontEmulator
 
 
 # Fixtures
@@ -60,10 +60,10 @@ def modbus_config(vsp_fixture):
 @pytest.mark.asyncio
 async def test_get_model(modbus_config, logger_fixture):
     """Test retrieving the gauge model."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -82,10 +82,10 @@ async def test_get_model(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_measure(modbus_config, logger_fixture):
     """Test measuring the default pressure."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -104,10 +104,10 @@ async def test_measure(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_pressure(modbus_config, logger_fixture):
     """Test setting and reading back a pressure value."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -128,10 +128,10 @@ async def test_set_pressure(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_get_calibration(modbus_config, logger_fixture):
     """Test retrieving calibration values."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -154,10 +154,10 @@ async def test_get_calibration(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_calibration(modbus_config, logger_fixture):
     """Test setting a calibration value."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -178,10 +178,10 @@ async def test_set_calibration(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_get_setpoint(modbus_config, logger_fixture):
     """Test retrieving setpoint values."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -204,10 +204,10 @@ async def test_get_setpoint(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_setpoint(modbus_config, logger_fixture):
     """Test setting a setpoint value."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -228,10 +228,10 @@ async def test_set_setpoint(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_atmosphere(modbus_config, logger_fixture):
     """Test setting atmosphere adjustment."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -251,10 +251,10 @@ async def test_set_atmosphere(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_zero(modbus_config, logger_fixture):
     """Test setting zero adjustment."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -274,10 +274,10 @@ async def test_set_zero(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_get_penning_state(modbus_config, logger_fixture):
     """Test retrieving Penning gauge state."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -297,10 +297,10 @@ async def test_get_penning_state(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_penning_state(modbus_config, logger_fixture):
     """Test setting Penning gauge state."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -320,10 +320,10 @@ async def test_set_penning_state(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_get_penning_sync(modbus_config, logger_fixture):
     """Test retrieving Penning synchronization state."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -343,10 +343,10 @@ async def test_get_penning_sync(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_set_penning_sync(modbus_config, logger_fixture):
     """Test setting Penning synchronization state."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -366,10 +366,10 @@ async def test_set_penning_sync(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_read_data(modbus_config, logger_fixture):
     """Test reading gauge data dictionary."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -391,7 +391,7 @@ async def test_read_data(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_emulator_properties(modbus_config, logger_fixture):
     """Test emulator property getters and setters."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
     # Pressure
@@ -421,10 +421,10 @@ async def test_emulator_properties(modbus_config, logger_fixture):
 @pytest.mark.asyncio
 async def test_client_timeout(modbus_config, logger_fixture):
     """Test client handling of request timeout."""
-    emulator = ErstevakEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ErstevakVacuumGauge = ErstevakVacuumGauge(
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",

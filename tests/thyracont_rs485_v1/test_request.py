@@ -1,19 +1,19 @@
 """
-Tests for the scietex.hal.vacuum_gauge.erstevak.rs485.v1.request module.
+Tests for the scietex.hal.vacuum_gauge.Thyracont.rs485.v1.request module.
 
-This module tests the ErstevakRequest class, ensuring correct initialization, encoding, decoding,
-and execution of Erstevak-specific RS485 requests against a Modbus slave context.
+This module tests the ThyracontRequest class, ensuring correct initialization, encoding, decoding,
+and execution of Thyracont-specific RS485 requests against a Modbus slave context.
 """
 
 import pytest
 from pymodbus.datastore import ModbusSlaveContext, ModbusSequentialDataBlock
 
 try:
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.request import ErstevakRequest
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation_utils import REG_P
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import REG_P
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.request import ErstevakRequest
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation_utils import REG_P
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import REG_P
 
 
 # Fixture for ModbusSlaveContext
@@ -24,10 +24,10 @@ def context():
     return ModbusSlaveContext(hr=data_block)
 
 
-# Tests for ErstevakRequest initialization
+# Tests for ThyracontRequest initialization
 def test_request_init_default():
-    """Test default initialization of ErstevakRequest."""
-    request = ErstevakRequest()
+    """Test default initialization of ThyracontRequest."""
+    request = ThyracontRequest()
     assert request.command == ""
     assert request.function_code == 0
     assert request.data == ""
@@ -38,7 +38,7 @@ def test_request_init_default():
 
 def test_request_init_with_command_and_data():
     """Test initialization with command and data."""
-    request = ErstevakRequest(command="Mread", data=b"123456", slave=2, transaction=3)
+    request = ThyracontRequest(command="Mread", data=b"123456", slave=2, transaction=3)
     assert request.command == "M"  # Only first character
     assert request.function_code == ord("M")
     assert request.data == "123456"
@@ -49,7 +49,7 @@ def test_request_init_with_command_and_data():
 
 def test_request_init_long_data():
     """Test initialization with data longer than 6 bytes (truncated)."""
-    request = ErstevakRequest(data=b"123456789")
+    request = ThyracontRequest(data=b"123456789")
     assert request.data == "123456"  # Truncated to 6 bytes
     assert request.rtu_frame_size == 6
 
@@ -57,7 +57,7 @@ def test_request_init_long_data():
 # Tests for encode
 def test_request_encode():
     """Test encoding the request data."""
-    request = ErstevakRequest(command="M", data=b"123456")
+    request = ThyracontRequest(command="M", data=b"123456")
     encoded = request.encode()
     assert encoded == b"123456"
     assert request.command == "M"  # Command not included in encode
@@ -65,7 +65,7 @@ def test_request_encode():
 
 def test_request_encode_empty():
     """Test encoding with empty data."""
-    request = ErstevakRequest(command="T")
+    request = ThyracontRequest(command="T")
     encoded = request.encode()
     assert encoded == b""
 
@@ -73,7 +73,7 @@ def test_request_encode_empty():
 # Tests for decode
 def test_request_decode():
     """Test decoding data into the request."""
-    request = ErstevakRequest(command="s")
+    request = ThyracontRequest(command="s")
     request.decode(b"987620")
     assert request.data == "987620"
     assert request.rtu_frame_size == 6
@@ -82,7 +82,7 @@ def test_request_decode():
 
 def test_request_decode_empty():
     """Test decoding empty data."""
-    request = ErstevakRequest(command="T")
+    request = ThyracontRequest(command="T")
     request.decode(b"")
     assert request.data == ""
     assert request.rtu_frame_size == 0
@@ -96,10 +96,10 @@ async def test_update_datastore_read_pressure(context):
     # Set pressure to 1.234e-3 mbar (encoded as "123417")
     context.store["h"].values[REG_P] = 0xE219  # Low 16 bits
     context.store["h"].values[REG_P + 1] = 0x0001  # High 16 bits
-    request = ErstevakRequest(command="M", slave=2, transaction=1)
+    request = ThyracontRequest(command="M", slave=2, transaction=1)
     response = await request.update_datastore(context)
     print(context.store["h"].values)
-    assert isinstance(response, ErstevakRequest)
+    assert isinstance(response, ThyracontRequest)
     assert response.command == "M"
     assert response.data == "123417"
     assert response.registers == [49, 50, 51, 52, 49, 55]  # ASCII bytes for "123403"
@@ -111,10 +111,10 @@ async def test_update_datastore_read_pressure(context):
 @pytest.mark.asyncio
 async def test_update_datastore_write_pressure(context):
     """Test executing a pressure write request ('m')."""
-    request = ErstevakRequest(command="m", data=b"987620", slave=3, transaction=2)
+    request = ThyracontRequest(command="m", data=b"987620", slave=3, transaction=2)
     response = await request.update_datastore(context)
 
-    assert isinstance(response, ErstevakRequest)
+    assert isinstance(response, ThyracontRequest)
     assert response.command == "m"
     assert response.data == "987620"  # Echoes input data
     assert response.registers == [57, 56, 55, 54, 50, 48]  # ASCII bytes for "987620"
@@ -130,10 +130,10 @@ async def test_update_datastore_write_pressure(context):
 @pytest.mark.asyncio
 async def test_update_datastore_gauge_type(context):
     """Test executing a gauge type request ('T')."""
-    request = ErstevakRequest(command="T", slave=1, transaction=4)
+    request = ThyracontRequest(command="T", slave=1, transaction=4)
     response = await request.update_datastore(context)
 
-    assert isinstance(response, ErstevakRequest)
+    assert isinstance(response, ThyracontRequest)
     assert response.command == "T"
     assert response.data == "MTM09D"
     assert response.registers == [77, 84, 77, 48, 57, 68]  # ASCII bytes for "MTM09D"
@@ -145,10 +145,10 @@ async def test_update_datastore_gauge_type(context):
 @pytest.mark.asyncio
 async def test_update_datastore_empty_command(context):
     """Test executing a request with no command."""
-    request = ErstevakRequest(data=b"123456", slave=5, transaction=6)
+    request = ThyracontRequest(data=b"123456", slave=5, transaction=6)
     response = await request.update_datastore(context)
 
-    assert isinstance(response, ErstevakRequest)
+    assert isinstance(response, ThyracontRequest)
     assert response.command == ""
     assert response.data == "123456"  # Default response echoes data
     assert response.registers == [49, 50, 51, 52, 53, 54]  # ASCII bytes for "123456"
@@ -159,7 +159,7 @@ async def test_update_datastore_empty_command(context):
 # Edge case: decode with invalid UTF-8 data
 def test_request_decode_invalid_utf8():
     """Test decoding invalid UTF-8 data."""
-    request = ErstevakRequest(command="M")
+    request = ThyracontRequest(command="M")
     with pytest.raises(UnicodeDecodeError):
         request.decode(b"\xff\xfe")  # Invalid UTF-8 sequence
 
@@ -169,7 +169,7 @@ def test_request_decode_invalid_utf8():
 @pytest.mark.asyncio
 async def test_update_datastore_invalid_data(context):
     """Test executing a request with invalid data for a command."""
-    request = ErstevakRequest(command="m", data=b"abc123")  # Invalid integer for pressure
+    request = ThyracontRequest(command="m", data=b"abc123")  # Invalid integer for pressure
     response = await request.update_datastore(context)
     assert response.data == "abc123"  # Echoes input despite failure
     assert response.registers == [97, 98, 99, 49, 50, 51]  # ASCII bytes for "abc123"

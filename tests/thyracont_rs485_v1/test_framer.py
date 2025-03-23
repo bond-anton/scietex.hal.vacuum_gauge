@@ -1,8 +1,8 @@
 """
-Tests for the scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer module.
+Tests for the scietex.hal.vacuum_gauge.Thyracont.rs485.v1.framer module.
 
-This module tests the ErstevakASCIIFramer class and its helper functions, ensuring correct
-checksum calculation, frame encoding, decoding, and incoming frame processing for the Erstevak
+This module tests the ThyracontASCIIFramer class and its helper functions, ensuring correct
+checksum calculation, frame encoding, decoding, and incoming frame processing for the Thyracont
 RS485 protocol.
 """
 
@@ -10,22 +10,22 @@ import pytest
 from pymodbus.pdu import ModbusPDU
 
 try:
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.request import ErstevakRequest
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.decoder import ErstevakDecodePDU
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.checksum import calc_checksum, check_checksum
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer import ErstevakASCIIFramer
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.decoder import ThyracontDecodePDU
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.checksum import calc_checksum, check_checksum
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.framer import ThyracontASCIIFramer
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.request import ErstevakRequest
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.decoder import ErstevakDecodePDU
-    from scietex.hal.vacuum_gauge.erstevak.rs485.checksum import calc_checksum, check_checksum
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.framer import ErstevakASCIIFramer
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.decoder import ThyracontDecodePDU
+    from scietex.hal.vacuum_gauge.thyracont.rs485.checksum import calc_checksum, check_checksum
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.framer import ThyracontASCIIFramer
 
 
 @pytest.fixture
 def decoder():
-    """Create an ErstevakDecodePDU instance."""
-    dec = ErstevakDecodePDU(is_server=False)
-    dec.register(ErstevakRequest)
+    """Create an ThyracontDecodePDU instance."""
+    dec = ThyracontDecodePDU(is_server=False)
+    dec.register(ThyracontRequest)
     return dec
 
 
@@ -33,8 +33,8 @@ def decoder():
 # pylint: disable=redefined-outer-name
 @pytest.fixture
 def framer(decoder):
-    """Create an ErstevakASCIIFramer instance."""
-    return ErstevakASCIIFramer(decoder=decoder)
+    """Create an ThyracontASCIIFramer instance."""
+    return ThyracontASCIIFramer(decoder=decoder)
 
 
 # Tests for helper functions
@@ -60,20 +60,20 @@ def testcheck_checksum_invalid():
     assert check_checksum(msg, checksum) is False
 
 
-# Tests for ErstevakASCIIFramer
+# Tests for ThyracontASCIIFramer
 # pylint: disable=redefined-outer-name
 def test_framer_init(framer):
-    """Test initialization of ErstevakASCIIFramer."""
+    """Test initialization of ThyracontASCIIFramer."""
     assert framer.START == b""
     assert framer.END == b"\r"
     assert framer.MIN_SIZE == 6
-    assert isinstance(framer.decoder, ErstevakDecodePDU)
+    assert isinstance(framer.decoder, ThyracontDecodePDU)
 
 
 # pylint: disable=redefined-outer-name
 def test_decode_complete_frame(decoder):
     """Test decoding a complete frame."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     msg = b"001T"
     data = msg + bytes([calc_checksum(msg)]) + b"\r"
     used_len, dev_id, tid, frame_data = framer.decode(data)
@@ -86,7 +86,7 @@ def test_decode_complete_frame(decoder):
 # pylint: disable=redefined-outer-name
 def test_decode_incomplete_frame(decoder):
     """Test decoding an incomplete frame (no end delimiter)."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     data = b"001T@"
     used_len, dev_id, tid, frame_data = framer.decode(data)
     assert used_len == 0
@@ -98,7 +98,7 @@ def test_decode_incomplete_frame(decoder):
 # pylint: disable=redefined-outer-name
 def test_decode_frame_too_short(decoder):
     """Test decoding a frame shorter than MIN_SIZE."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     data = b"00\r"
     used_len, dev_id, tid, frame_data = framer.decode(data)
     assert used_len == 0
@@ -110,7 +110,7 @@ def test_decode_frame_too_short(decoder):
 # pylint: disable=redefined-outer-name
 def test_decode_invalid_checksum(decoder):
     """Test decoding a frame with an invalid checksum."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     data = b"001SA\r"  # Checksum 65 (A) is wrong;
     used_len, dev_id, tid, frame_data = framer.decode(data)
     assert used_len == 6
@@ -122,7 +122,7 @@ def test_decode_invalid_checksum(decoder):
 # pylint: disable=redefined-outer-name
 def test_decode_multiple_frames(decoder):
     """Test decoding multiple frames in one data chunk."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     msg1 = b"001S"
     msg1 = msg1 + bytes([calc_checksum(msg1)]) + b"\r"
     msg2 = b"002M"
@@ -143,7 +143,7 @@ def test_decode_multiple_frames(decoder):
 # pylint: disable=redefined-outer-name
 def test_encode_frame(decoder):
     """Test encoding a frame."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     data = b"S"
     device_id = 1
     frame = framer.encode(data, device_id, 0)
@@ -155,7 +155,7 @@ def test_encode_frame(decoder):
 # pylint: disable=redefined-outer-name,protected-access
 def test_encode_different_device_id(decoder):
     """Test encoding with a different device ID."""
-    framer = ErstevakASCIIFramer(decoder)
+    framer = ThyracontASCIIFramer(decoder)
     data = b"M"
     device_id = 123
     frame = framer.encode(data, device_id, 0)

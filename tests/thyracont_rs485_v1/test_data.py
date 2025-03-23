@@ -1,8 +1,8 @@
 """
-Tests for the scietex.hal.vacuum_gauge.erstevak.rs485.v1.data module.
+Tests for the scietex.hal.vacuum_gauge.Thyracont.rs485.v1.data module.
 
 This module tests the utility functions for encoding and decoding pressure and calibration data
-in the Erstevak RS485 protocol, ensuring correct mantissa/exponent calculation, pressure string
+in the Thyracont RS485 protocol, ensuring correct mantissa/exponent calculation, pressure string
 formatting, and calibration value conversion.
 """
 
@@ -11,7 +11,7 @@ from numpy.testing import assert_almost_equal
 import pytest
 
 try:
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.data import (
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.data import (
         f_exp,
         f_man,
         _pressure_encode,
@@ -20,7 +20,7 @@ try:
         _calibration_decode,
     )
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.data import (
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.data import (
         f_exp,
         f_man,
         _pressure_encode,

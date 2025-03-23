@@ -1,37 +1,37 @@
 """
-Erstevak RS485 Version 2 Decoder Module.
+Thyracont RS485 Version 2 Decoder Module.
 
-This module provides a custom Modbus Protocol Data Unit (PDU) decoder for Erstevak's RS485
-protocol, extending `pymodbus.pdu.DecodePDU`. It is designed to decode Erstevak-specific frames,
-which consist of a single-character command followed by a data payload, into `ErstevakRequest` PDU
-instances. The decoder supports a simplified lookup mechanism tailored to Erstevak’s protocol,
+This module provides a custom Modbus Protocol Data Unit (PDU) decoder for Thyracont's RS485
+protocol, extending `pymodbus.pdu.DecodePDU`. It is designed to decode Thyracont-specific frames,
+which consist of a single-character command followed by a data payload, into `ThyracontRequest` PDU
+instances. The decoder supports a simplified lookup mechanism tailored to Thyracont’s protocol,
 where only one PDU type is expected.
 
 Classes:
-    ErstevakDecodePDU: A custom PDU decoder for Erstevak’s RS485 protocol, handling frame decoding
-        into `ErstevakRequest` objects.
+    ThyracontDecodePDU: A custom PDU decoder for Thyracont’s RS485 protocol, handling frame decoding
+        into `ThyracontRequest` objects.
 """
 
 from typing import Optional
 from pymodbus import ModbusException
 from pymodbus.pdu import ModbusPDU
 
-from ..decoder import ErstevakRS485DecodePDU
-from .request import AccessCode
+from ..decoder import ThyracontRS485DecodePDU
+from .data import AccessCode
 
 
-class ErstevakDecodePDU(ErstevakRS485DecodePDU):
+class ThyracontDecodePDU(ThyracontRS485DecodePDU):
     """
-    Erstevak custom RS485 V2 protocol decoder class.
+    Thyracont custom RS485 V2 protocol decoder class.
     """
 
     def decode(self, frame: bytes) -> Optional[ModbusPDU]:
         """
-        Decode an Erstevak RS485 V2 frame into an `ErstevakRequest` instance.
+        Decode an Thyracont RS485 V2 frame into an `ThyracontRequest` instance.
 
         Parses the frame by extracting the first byte as an Access Code, following two bytes as
         command string, and the remaining bytes as data length and data bytes.
-        Creates an `ErstevakRequest` instance with the command and data, then decodes the data
+        Creates an `ThyracontRequest` instance with the command and data, then decodes the data
         portion into the instance’s `data` attribute. The frame’s bytes (excluding the command)
         are also stored in the `registers` attribute as a list. Returns None if decoding fails
         due to an empty frame or exceptions.
@@ -45,7 +45,7 @@ class ErstevakDecodePDU(ErstevakRS485DecodePDU):
         Returns
         -------
         Optional[ModbusPDU]
-            An `ErstevakRequest` instance if decoding succeeds, otherwise None.
+            An `ThyracontRequest` instance if decoding succeeds, otherwise None.
 
         Raises
         ------

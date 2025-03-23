@@ -1,29 +1,33 @@
 """
-Erstevak RS485 Version 1 Request Module.
+Thyracont RS485 Version 2 Request Module.
 
-This module defines a custom Modbus Protocol Data Unit (PDU) for Erstevak's RS485 protocol,
-extending `pymodbus.pdu.ModbusPDU`. It encapsulates Erstevak-specific requests, which consist of a
-single-character command and up to 6 bytes of data, and integrates with a Modbus slave context via
-the `parse_command` utility. The class handles encoding, decoding, and executing these requests,
-emulating the communication behavior of an Erstevak vacuum gauge (e.g., MTM9D) over RS485.
+This module defines a custom Modbus Protocol Data Unit (PDU) for Thyracont's RS485 protocol V2,
+extending `pymodbus.pdu.ModbusPDU`. It encapsulates Thyracont-specific requests, which consist of a
+single-byte access-code, two-character command, two bytes of data length followed by data bytes,
+and integrates with a Modbus slave context via the `parse_command` utility.
+The class handles encoding, decoding, and executing these requests, emulating the communication
+behavior of an Thyracont vacuum gauge (e.g., MTM9D) over RS485.
 
 Classes:
-    ErstevakRequest: A custom Modbus PDU class for Erstevak RS485 requests, supporting command
+    ThyracontRequest: A custom Modbus PDU class for Thyracont RS485 requests, supporting command
         execution and response generation.
 """
 
 from typing import Optional
+
 from pymodbus.pdu import ModbusPDU
 from pymodbus.datastore import ModbusSlaveContext
 
-from .emulation_utils import parse_command
+from .data import AccessCode
+
+# from .emulation_utils import parse_command
 
 
-class ErstevakRequest(ModbusPDU):
+class ThyracontRequest(ModbusPDU):
     """
-    Erstevak custom protocol request.
+    Thyracont custom protocol request.
 
-    A custom Modbus PDU class for Erstevak's RS485 protocol, designed to handle single-character
+    A custom Modbus PDU class for Thyracont's RS485 V2 protocol, designed to handle single-character
     commands (e.g., "M", "s") and associated data payloads (up to 6 bytes). It extends `ModbusPDU`
     to support encoding, decoding, and asynchronous execution of requests against a Modbus slave
     context, using `parse_command` from `emulation_utils` to process the request and generate a
@@ -62,15 +66,17 @@ class ErstevakRequest(ModbusPDU):
     function_code = 0
     rtu_frame_size = 0
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
+        access_code: Optional[AccessCode] = None,
         command: Optional[str] = None,
         data: Optional[bytes] = None,
         slave=1,
         transaction=0,
     ) -> None:
         """
-        Initialize an ErstevakRequest instance.
+        Initialize an ThyracontRequest instance.
 
         Sets up the request with a command, data payload, slave ID, and transaction ID. The command
         is limited to its first character, and the data is decoded from up to 6 bytes into a string.
@@ -90,14 +96,15 @@ class ErstevakRequest(ModbusPDU):
             The transaction ID. Defaults to 0.
         """
         super().__init__(dev_id=slave, transaction_id=transaction)
+        if access_code is not None:
+            self.function_code = access_code.value
         self.command: str = ""
-        if command is not None and len(command) > 0:
-            self.command = command[0]
-        self.function_code = self.command.encode()[0] if self.command else 0
+        if command is not None and len(command) > 1:
+            self.command = command[:2]
         self.__data: str = ""
         self.rtu_frame_size = 0
         if data is not None:
-            self.data = data[:6].decode()
+            self.data = data.decode()
 
     @property
     def data(self) -> str:
@@ -106,7 +113,7 @@ class ErstevakRequest(ModbusPDU):
 
     @data.setter
     def data(self, new_data: str) -> None:
-        self.__data = new_data[:6]
+        self.__data = new_data
         self.rtu_frame_size = len(self.__data)
 
     def encode(self) -> bytes:
@@ -121,7 +128,9 @@ class ErstevakRequest(ModbusPDU):
         bytes
             The encoded data payload (e.g., b"123456").
         """
-        return self.data.encode()
+        payload: bytes = f"{self.function_code:1d}".encode() + self.command.encode()
+        payload += f"{len(self.data):02d}".encode() + self.data.encode()
+        return payload
 
     def decode(self, data: bytes) -> None:
         """
@@ -135,14 +144,20 @@ class ErstevakRequest(ModbusPDU):
         data : bytes
             The byte string to decode (e.g., b"123456").
         """
-        self.data = data.decode()
+        self.function_code = int(data[0:1], 10)
+        if self.function_code not in (6, 7):
+            self.function_code -= 1
+        self.command = data[1:3].decode()
+        self.rtu_frame_size = int(data[3:5], 10)
+        self.data = data[5 : 5 + self.rtu_frame_size].decode()
 
+    # pylint: disable=duplicate-code
     async def update_datastore(self, context: ModbusSlaveContext) -> ModbusPDU:
         """
         Execute the request against a Modbus slave context and return a response PDU.
 
         Processes the request by calling `parse_command` with the command and data, then constructs
-        a response `ErstevakRequest` instance with the resulting data. The response includes the
+        a response `ThyracontRequest` instance with the resulting data. The response includes the
         original command, slave ID, and transaction ID, and stores the response bytes in the
         `registers` attribute as a list.
 
@@ -154,11 +169,13 @@ class ErstevakRequest(ModbusPDU):
         Returns
         -------
         ModbusPDU
-            An `ErstevakRequest` instance representing the response, with `registers` set to the
+            An `ThyracontRequest` instance representing the response, with `registers` set to the
             list of response bytes.
         """
-        data: bytes = parse_command(context, self.command, self.data)
-        response = ErstevakRequest(
+        # data: bytes = parse_command(context, self.command, self.data)
+        data: bytes = self.data.encode()
+        response = ThyracontRequest(
+            AccessCode.from_int(self.function_code + 1),
             self.command,
             data,
             slave=self.dev_id,

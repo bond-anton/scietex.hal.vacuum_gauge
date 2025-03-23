@@ -1,8 +1,8 @@
 """
-Erstevak RS485 Version 1 Data Module.
+Thyracont RS485 Version 1 Data Module.
 
 This module provides utility functions for encoding and decoding pressure and calibration data
-for Erstevak's RS485 protocol, used in vacuum gauge communication (e.g., MTM9D model). Pressure
+for Thyracont's RS485 protocol, used in vacuum gauge communication (e.g., VSP model). Pressure
 values (in millibars) are encoded into a 6-digit string format combining a 4-digit mantissa and a
 2-digit exponent, while calibration values are encoded as scaled integers. The module uses the
 `Decimal` class for precise floating-point manipulation.
@@ -141,7 +141,7 @@ def _calibration_encode(cal: float) -> str:
     Encode a calibration value into a string.
 
     Converts a calibration factor (a float) into a string by scaling it by 100 and rounding to the
-    nearest integer. This format is used for calibration registers in the Erstevak protocol.
+    nearest integer. This format is used for calibration registers in the Thyracont protocol.
 
     Parameters
     ----------

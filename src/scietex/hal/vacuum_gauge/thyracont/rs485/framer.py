@@ -1,14 +1,15 @@
 """
-Erstevak RS485 ASCII Framer Module.
+Thyracont RS485 ASCII Framer Module.
 
-This module implements a custom ASCII framer for Erstevak's RS485 protocol, extending the `pymodbus`
-`FramerAscii` class. It is designed to handle Erstevak-specific Application Data Units (ADUs)
-without a traditional start byte, using a 3-byte device ID, a custom checksum, and a carriage
-return (`\\r`) as the end delimiter. The framer supports encoding and decoding of Modbus messages
-with a minimum frame size of 4 bytes, tailored for Erstevak vacuum gauge communication over RS485.
+This module implements a custom ASCII framer for Thyracont's RS485 protocol,
+extending the `pymodbus` `FramerAscii` class. It is designed to handle Thyracont-specific
+Application Data Units (ADUs) without a traditional start byte, using a 3-byte device ID, a custom
+checksum, and a carriage return (`\\r`) as the end delimiter. The framer supports encoding and
+decoding of Modbus messages with a minimum frame size of 4 bytes, tailored for Thyracont vacuum
+gauge communication over RS485.
 
 Classes:
-    ErstevakASCIIFramer: A custom ASCII framer for Erstevak's RS485 protocol, overriding
+    ThyracontASCIIFramer: A custom ASCII framer for Thyracont's RS485 protocol, overriding
         `FramerAscii` methods for encoding, decoding, and processing incoming frames.
 """
 
@@ -20,20 +21,20 @@ from pymodbus.pdu import ModbusPDU
 from .checksum import calc_checksum, check_checksum
 
 
-class ErstevakRS485ASCIIFramer(FramerAscii):
+class ThyracontRS485ASCIIFramer(FramerAscii):
     """
-    Erstevak custom protocol ASCII framer.
+    Thyracont custom protocol ASCII framer.
 
-    A custom ASCII framer for Erstevak's RS485 protocol, extending `pymodbus.framer.FramerAscii`.
+    A custom ASCII framer for Thyracont's RS485 protocol, extending `pymodbus.framer.FramerAscii`.
     Unlike the standard Modbus ASCII framer, it uses no start byte, a 3-digit device ID at the
     beginning of each frame, a custom single-byte checksum, and a carriage return (`\\r`) as the
-    end delimiter. The minimum frame size is reduced to 4 bytes to accommodate Erstevak's compact
+    end delimiter. The minimum frame size is reduced to 4 bytes to accommodate Thyracont's compact
     message format.
 
     Attributes
     ----------
     START : bytes
-        The start delimiter for the frame (empty for Erstevak protocol).
+        The start delimiter for the frame (empty for Thyracont protocol).
     END : bytes
         The end delimiter for the frame (`b"\\r"`).
     MIN_SIZE : int
@@ -44,7 +45,7 @@ class ErstevakRS485ASCIIFramer(FramerAscii):
     decode(data: bytes) -> tuple[int, int, int, bytes]
         Decodes an incoming frame into device ID, transaction ID, and message data.
     encode(data: bytes, device_id: int, _tid: int) -> bytes
-        Encodes a message into an Erstevak ASCII frame with device ID and checksum.
+        Encodes a message into an Thyracont ASCII frame with device ID and checksum.
     _processIncomingFrame(data: bytes) -> tuple[int, Optional[ModbusPDU]]
         Processes incoming data to extract and decode a complete frame.
     """
@@ -57,7 +58,7 @@ class ErstevakRS485ASCIIFramer(FramerAscii):
         """
         Customized decode ADU function.
 
-        Decodes an Erstevak RS485 ASCII frame from raw bytes into its components: the number of
+        Decodes an Thyracont RS485 ASCII frame from raw bytes into its components: the number of
         bytes used, the device ID, a placeholder transaction ID (always 0), and the message data.
         The frame format is `<3-digit-device-id><message><1-byte-checksum>\\r`.
         If the frame is incomplete or invalid (e.g., missing end byte or incorrect checksum),
@@ -100,7 +101,7 @@ class ErstevakRS485ASCIIFramer(FramerAscii):
         """
         Customized encode ADU function.
 
-        Encodes a message into an Erstevak RS485 ASCII frame by prepending a 3-digit device ID,
+        Encodes a message into an Thyracont RS485 ASCII frame by prepending a 3-digit device ID,
         appending a calculated checksum, and framing it with the `START` (empty) and `END` (`\\r`)
         delimiters. The transaction ID (`_tid`) is ignored as it’s not part of this protocol.
 
@@ -127,7 +128,7 @@ class ErstevakRS485ASCIIFramer(FramerAscii):
         """
         Process new packet pattern.
 
-        Processes incoming data to extract and decode a complete Erstevak ASCII frame. It uses the
+        Processes incoming data to extract and decode a complete Thyracont ASCII frame. It uses the
         `decode` method to parse the frame and the inherited `decoder` to interpret the message
         data as a Modbus PDU. If decoding fails or the PDU is invalid, it raises a
         `ModbusIOException`.

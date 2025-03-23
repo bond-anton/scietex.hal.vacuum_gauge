@@ -1,7 +1,7 @@
 """
-Tests for the scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation_utils module.
+Tests for the scietex.hal.vacuum_gauge.Thyracont.rs485.v1.emulation_utils module.
 
-This module tests utility functions for emulating Erstevak RS485 communication, including reading
+This module tests utility functions for emulating Thyracont RS485 communication, including reading
 and writing 32-bit values across register pairs, pressure encoding/decoding, and parsing custom
 ASCII commands.
 """
@@ -10,7 +10,7 @@ import pytest
 from pymodbus.datastore import ModbusSlaveContext, ModbusSequentialDataBlock
 
 try:
-    from src.scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation_utils import (
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import (
         REG_P,
         REG_SP1,
         REG_SP2,
@@ -29,7 +29,7 @@ try:
         parse_command,
     )
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.erstevak.rs485.v1.emulation_utils import (
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import (
         REG_P,
         REG_SP1,
         REG_SP2,

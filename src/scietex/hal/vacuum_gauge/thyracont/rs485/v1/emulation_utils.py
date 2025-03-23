@@ -1,10 +1,10 @@
 """
-Erstevak RS485 Version 1 Emulation Utilities Module.
+Thyracont RS485 Version 1 Emulation Utilities Module.
 
-This module provides utility functions for emulating an Erstevak vacuum gauge's RS485 communication
+This module provides utility functions for emulating a Thyracont vacuum gauge's RS485 communication
 protocol, specifically interacting with a Modbus slave context. It supports reading and writing
 32-bit values across pairs of 16-bit holding registers, converting pressure values to and from an
-encoded format, and parsing custom ASCII commands for the Erstevak MTM9D gauge. The module relies
+encoded format, and parsing custom ASCII commands for the Thyracont MTM9D gauge. The module relies
 on external utilities for numeric splitting/combining and pressure encoding/decoding.
 
 Constants:
@@ -30,7 +30,7 @@ Functions:
     pressure_to_reg(context: ModbusSlaveContext, p: float, start_reg: int) -> None
         Encodes and writes a pressure value to two registers.
     parse_command(context: ModbusSlaveContext, command: str, data: str) -> bytes
-        Parses and executes Erstevak-specific ASCII commands, returning a response.
+        Parses and executes Thyracont-specific ASCII commands, returning a response.
 """
 
 from typing import Optional
@@ -144,12 +144,12 @@ def pressure_to_reg(context: ModbusSlaveContext, p: float, start_reg: int) -> No
 # pylint: disable=too-many-branches,too-many-statements
 def parse_command(context: ModbusSlaveContext, command: str, data: str) -> bytes:
     """
-    Parses and executes Erstevak-specific ASCII commands, returning a response.
+    Parses and executes Thyracont-specific ASCII commands, returning a response.
 
     Interprets single-character commands and associated data to read from or write to the Modbus
-    slave context's holding registers, emulating the Erstevak MTM9D gauge's RS485 protocol. Commands
-    include reading pressure, setpoints, calibration values, and states, as well as writing new
-    values or toggling adjustment flags.
+    slave context's holding registers, emulating the Thyracont MTM9D gauge's RS485 protocol.
+    Commands include reading pressure, setpoints, calibration values, and states, as well as
+    writing new values or toggling adjustment flags.
 
     Parameters
     ----------
