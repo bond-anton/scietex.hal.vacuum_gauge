@@ -1,7 +1,7 @@
 """
 Thyracont RS485 Version 1 Emulation Module.
 
-This module provides an RS485 server emulator for an Thyracont vacuum gauge (e.g., VSP), extending
+This module provides an RS485 server emulator for a Thyracont vacuum gauge (e.g., VSP), extending
 `scietex.hal.serial.server.RS485Server`. It simulates the gauge's behavior over the Thyracont RS485
 protocol by managing a Modbus slave context with holding registers for pressure, setpoints,
 calibration values, and Penning gauge states. The emulator uses custom framing, decoding, and
@@ -9,14 +9,14 @@ request handling from the `Thyracont.rs485.v1` subpackage, with properties for e
 simulated data.
 
 Classes:
-    ThyracontEmulator: An RS485 server emulator for an Thyracont vacuum gauge, providing properties
+    ThyracontEmulator: An RS485 server emulator for a Thyracont vacuum gauge, providing properties
         to get and set gauge parameters.
 """
 
-from typing import Optional, Union
+from typing import Optional
 from logging import Logger
 
-from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext
+from pymodbus.datastore import ModbusSequentialDataBlock, ModbusDeviceContext
 
 from scietex.hal.serial.config import (
     SerialConnectionConfigModel,
@@ -45,7 +45,7 @@ class ThyracontEmulator(RS485Server):
     """
     Thyracont vacuum gauge RS485 emulator.
 
-    An RS485 server emulator for an Thyracont vacuum gauge, extending
+    An RS485 server emulator for a Thyracont vacuum gauge, extending
     `scietex.hal.serial.server.RS485Server`. It simulates gauge functionality by maintaining a
     Modbus slave context with 14 holding registers, accessible via properties for pressure,
     setpoints (sp1, sp2), calibration values (cal1, cal2), and Penning gauge states (penning_state,
@@ -54,30 +54,21 @@ class ThyracontEmulator(RS485Server):
 
     Attributes
     ----------
-    slaves : dict[int, ModbusSlaveContext]
-        A dictionary mapping the device address to its Modbus slave context, inherited from
+    devices : dict[int, ModbusSlaveContext]
+        A dictionary mapping the device address to its Modbus device context, inherited from
         `RS485Server`.
     __address : int
         The device (slave) address (private, set during initialization).
-    con_params : Union[SerialConnectionConfigModel, ModbusSerialConnectionConfigModel]
+    con_params : SerialConnectionConfigModel | ModbusSerialConnectionConfigModel
         The serial connection configuration, inherited from `RS485Server`.
     logger : Optional[Logger]
         A logger instance for debugging, inherited from `RS485Server`.
-
-    Properties
-    ----------
     pressure : float
         Gets or sets the simulated pressure value in millibars (REG_P).
-    sp1 : float
-        Gets or sets the simulated setpoint 1 pressure in millibars (REG_SP1).
-    sp2 : float
-        Gets or sets the simulated setpoint 2 pressure in millibars (REG_SP2).
     cal1 : float
         Gets or sets the simulated calibration value 1 (REG_CAL1).
     cal2 : float
         Gets or sets the simulated calibration value 2 (REG_CAL2).
-    penning_state : bool
-        Gets or sets the simulated Penning gauge state (REG_PENNING_STATE).
     penning_sync : bool
         Gets or sets the simulated Penning synchronization state (REG_PENNING_SYNC).
 
@@ -85,11 +76,17 @@ class ThyracontEmulator(RS485Server):
     -------
     __init__(con_params, logger=None, address=1) -> None
         Initializes the emulator with connection parameters, logger, and address.
+    sp1 : float
+        Property. Gets or sets the simulated setpoint 1 pressure in millibars (REG_SP1).
+    sp2 : float
+        Property. Gets or sets the simulated setpoint 2 pressure in millibars (REG_SP2).
+    penning_state : bool
+        Property. Gets or sets the simulated Penning gauge state (REG_PENNING_STATE).
     """
 
     def __init__(
         self,
-        con_params: Union[SerialConnectionConfigModel, ModbusSerialConnectionConfigModel],
+        con_params: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
         logger: Optional[Logger] = None,
         address: Optional[int] = None,
     ) -> None:
@@ -111,18 +108,18 @@ class ThyracontEmulator(RS485Server):
             The device (slave) address. Defaults to 1.
         """
         data_block = ModbusSequentialDataBlock(0x01, list([0] * 14))
-        store = ModbusSlaveContext(hr=data_block)
+        store = ModbusDeviceContext(hr=data_block)
         self.__address: int = 1
         if address is not None:
             self.__address = address
-        self.slaves = {self.__address: store}
+        self.devices = {self.__address: store}
         self.pressure = 1000  # Default pressure in mbar
         self.cal1 = 1.0  # Default calibration 1
         self.cal2 = 1.0  # Default calibration 2
         self.penning_sync = True  # Default Penning sync state
         super().__init__(
             con_params,
-            slaves=self.slaves,
+            devices=self.devices,
             custom_pdu=[ThyracontRequest],
             custom_framer=ThyracontASCIIFramer,
             custom_decoder=ThyracontDecodePDU,
@@ -141,7 +138,7 @@ class ThyracontEmulator(RS485Server):
         float
             The current pressure value in millibars (mbar).
         """
-        return pressure_from_reg(self.slaves[self.__address], REG_P)
+        return pressure_from_reg(self.devices[self.__address], REG_P)
 
     @pressure.setter
     def pressure(self, p: float) -> None:
@@ -155,7 +152,7 @@ class ThyracontEmulator(RS485Server):
         p : float
             The pressure value to set in millibars (mbar).
         """
-        pressure_to_reg(self.slaves[self.__address], p, REG_P)
+        pressure_to_reg(self.devices[self.__address], p, REG_P)
 
     @property
     def sp1(self) -> Optional[float]:
@@ -170,7 +167,7 @@ class ThyracontEmulator(RS485Server):
         float
             The current setpoint 1 pressure in millibars (mbar).
         """
-        return pressure_from_reg(self.slaves[self.__address], REG_SP1)
+        return pressure_from_reg(self.devices[self.__address], REG_SP1)
 
     @sp1.setter
     def sp1(self, p: float) -> None:
@@ -184,7 +181,7 @@ class ThyracontEmulator(RS485Server):
         p : float
             The setpoint 1 pressure to set in millibars (mbar).
         """
-        pressure_to_reg(self.slaves[self.__address], p, REG_SP1)
+        pressure_to_reg(self.devices[self.__address], p, REG_SP1)
 
     @property
     def sp2(self) -> Optional[float]:
@@ -199,7 +196,7 @@ class ThyracontEmulator(RS485Server):
         float
             The current setpoint 2 pressure in millibars (mbar).
         """
-        return pressure_from_reg(self.slaves[self.__address], REG_SP2)
+        return pressure_from_reg(self.devices[self.__address], REG_SP2)
 
     @sp2.setter
     def sp2(self, p: float) -> None:
@@ -213,7 +210,7 @@ class ThyracontEmulator(RS485Server):
         p : float
             The setpoint 2 pressure to set in millibars (mbar).
         """
-        pressure_to_reg(self.slaves[self.__address], p, REG_SP2)
+        pressure_to_reg(self.devices[self.__address], p, REG_SP2)
 
     @property
     def cal1(self) -> Optional[float]:
@@ -227,7 +224,7 @@ class ThyracontEmulator(RS485Server):
         float
             The current calibration value 1.
         """
-        cal_str = f"{self.slaves[self.__address].store['h'].values[REG_CAL1]:06d}"
+        cal_str = f"{self.devices[self.__address].store['h'].values[REG_CAL1]:06d}"
         return _calibration_decode(cal_str)
 
     @cal1.setter
@@ -243,7 +240,7 @@ class ThyracontEmulator(RS485Server):
             The calibration value to set.
         """
         cal_encoded = int(_calibration_encode(cal))
-        self.slaves[self.__address].store["h"].values[REG_CAL1] = cal_encoded
+        self.devices[self.__address].store["h"].values[REG_CAL1] = cal_encoded
 
     @property
     def cal2(self) -> Optional[float]:
@@ -257,7 +254,7 @@ class ThyracontEmulator(RS485Server):
         float
             The current calibration value 2.
         """
-        cal_str = f"{self.slaves[self.__address].store['h'].values[REG_CAL2]:06d}"
+        cal_str = f"{self.devices[self.__address].store['h'].values[REG_CAL2]:06d}"
         return _calibration_decode(cal_str)
 
     @cal2.setter
@@ -273,7 +270,7 @@ class ThyracontEmulator(RS485Server):
             The calibration value to set.
         """
         cal_encoded = int(_calibration_encode(cal))
-        self.slaves[self.__address].store["h"].values[REG_CAL2] = cal_encoded
+        self.devices[self.__address].store["h"].values[REG_CAL2] = cal_encoded
 
     @property
     def penning_state(self) -> bool:
@@ -288,7 +285,7 @@ class ThyracontEmulator(RS485Server):
         bool
             The current Penning gauge state (True if on, False if off).
         """
-        return bool(self.slaves[self.__address].store["h"].values[REG_PENNING_STATE])
+        return bool(self.devices[self.__address].store["h"].values[REG_PENNING_STATE])
 
     @penning_state.setter
     def penning_state(self, state: bool) -> None:
@@ -303,7 +300,7 @@ class ThyracontEmulator(RS485Server):
         state : bool
             The state to set (True for on, False for off).
         """
-        self.slaves[self.__address].store["h"].values[REG_PENNING_STATE] = int(bool(state))
+        self.devices[self.__address].store["h"].values[REG_PENNING_STATE] = int(bool(state))
 
     @property
     def penning_sync(self) -> bool:
@@ -318,7 +315,7 @@ class ThyracontEmulator(RS485Server):
         bool
             The current Penning synchronization state (True if on, False if off).
         """
-        return bool(self.slaves[self.__address].store["h"].values[REG_PENNING_SYNC])
+        return bool(self.devices[self.__address].store["h"].values[REG_PENNING_SYNC])
 
     @penning_sync.setter
     def penning_sync(self, state: bool) -> None:
@@ -333,4 +330,4 @@ class ThyracontEmulator(RS485Server):
         state : bool
             The synchronization state to set (True for on, False for off).
         """
-        self.slaves[self.__address].store["h"].values[REG_PENNING_SYNC] = int(bool(state))
+        self.devices[self.__address].store["h"].values[REG_PENNING_SYNC] = int(bool(state))

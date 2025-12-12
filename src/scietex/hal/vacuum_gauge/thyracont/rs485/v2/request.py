@@ -6,7 +6,7 @@ extending `pymodbus.pdu.ModbusPDU`. It encapsulates Thyracont-specific requests,
 single-byte access-code, two-character command, two bytes of data length followed by data bytes,
 and integrates with a Modbus slave context via the `parse_command` utility.
 The class handles encoding, decoding, and executing these requests, emulating the communication
-behavior of an Thyracont vacuum gauge (e.g., MTM9D) over RS485.
+behavior of a Thyracont vacuum gauge (e.g., MTM9D) over RS485.
 
 Classes:
     ThyracontRequest: A custom Modbus PDU class for Thyracont RS485 requests, supporting command
@@ -16,7 +16,7 @@ Classes:
 from typing import Optional
 
 from pymodbus.pdu import ModbusPDU
-from pymodbus.datastore import ModbusSlaveContext
+from pymodbus.datastore import ModbusDeviceContext
 
 from .data import AccessCode
 
@@ -72,8 +72,8 @@ class ThyracontRequest(ModbusPDU):
         access_code: Optional[AccessCode] = None,
         command: Optional[str] = None,
         data: Optional[bytes] = None,
-        slave=1,
-        transaction=0,
+        dev_id=1,
+        transaction_id=0,
     ) -> None:
         """
         Initialize an ThyracontRequest instance.
@@ -90,12 +90,12 @@ class ThyracontRequest(ModbusPDU):
         data : Optional[bytes], optional
             The data payload in bytes (e.g., b"123456"); limited to 6 bytes and decoded to a string.
             Defaults to None, resulting in an empty data string ("").
-        slave : int, optional
+        dev_id : int, optional
             The device (slave) ID. Defaults to 1.
-        transaction : int, optional
+        transaction_id : int, optional
             The transaction ID. Defaults to 0.
         """
-        super().__init__(dev_id=slave, transaction_id=transaction)
+        super().__init__(dev_id=dev_id, transaction_id=transaction_id)
         if access_code is not None:
             self.function_code = access_code.value
         self.command: str = ""
@@ -114,7 +114,10 @@ class ThyracontRequest(ModbusPDU):
     @data.setter
     def data(self, new_data: str) -> None:
         self.__data = new_data
-        self.rtu_frame_size = len(self.__data)
+        try:
+            self.rtu_frame_size = len(self.__data)
+        except TypeError:
+            self.rtu_frame_size = 0
 
     def encode(self) -> bytes:
         """
@@ -152,7 +155,7 @@ class ThyracontRequest(ModbusPDU):
         self.data = data[5 : 5 + self.rtu_frame_size].decode()
 
     # pylint: disable=duplicate-code
-    async def update_datastore(self, context: ModbusSlaveContext) -> ModbusPDU:
+    async def update_datastore(self, context: ModbusDeviceContext) -> ModbusPDU:
         """
         Execute the request against a Modbus slave context and return a response PDU.
 
@@ -178,8 +181,8 @@ class ThyracontRequest(ModbusPDU):
             AccessCode.from_int(self.function_code + 1),
             self.command,
             data,
-            slave=self.dev_id,
-            transaction=self.transaction_id,
+            dev_id=self.dev_id,
+            transaction_id=self.transaction_id,
         )
         response.registers = list(data)
         return response

@@ -19,15 +19,15 @@ except ModuleNotFoundError:
 def test_decoder_init_default():
     """Test default initialization of ThyracontDecodePDU."""
     decoder = ThyracontDecodePDU()
-    assert decoder.lookup == {}
-    assert decoder.sub_lookup == {}
+    assert decoder.pdu_table == {}
+    assert decoder.pdu_sub_table == {}
 
 
 def test_decoder_init_server_mode():
     """Test initialization in server mode."""
     decoder = ThyracontDecodePDU(is_server=True)
-    assert decoder.lookup == {}
-    assert decoder.sub_lookup == {}
+    assert decoder.pdu_table == {}
+    assert decoder.pdu_sub_table == {}
 
 
 # Tests for lookupPduClass
@@ -41,7 +41,7 @@ def test_lookup_pdu_class_empty():
 def test_lookup_pdu_class_registered():
     """Test PDU class lookup with a registered ThyracontRequest."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     pdu_class = decoder.lookupPduClass(b"Tdata")
     assert pdu_class == ThyracontRequest  # Always returns lookup[0], ignores data
 
@@ -50,7 +50,7 @@ def test_lookup_pdu_class_registered():
 def test_decode_valid_frame():
     """Test decoding a valid Thyracont frame."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     frame = b"M123456"  # Command "M", data "123456"
     pdu = decoder.decode(frame)
 
@@ -65,7 +65,7 @@ def test_decode_valid_frame():
 def test_decode_empty_frame():
     """Test decoding an empty frame."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     pdu = decoder.decode(b"")
     assert pdu is None
 
@@ -80,7 +80,7 @@ def test_decode_no_lookup():
 def test_decode_single_byte_frame():
     """Test decoding a frame with only a command."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     frame = b"T"
     pdu = decoder.decode(frame)
 
@@ -95,7 +95,7 @@ def test_decode_single_byte_frame():
 def test_decode_invalid_command():
     """Test decoding a frame with an invalid (non-UTF-8) command."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     frame = b"\xff123456"  # Invalid UTF-8 command byte
     pdu = decoder.decode(frame)
     assert pdu is None
@@ -104,7 +104,7 @@ def test_decode_invalid_command():
 def test_decode_long_data():
     """Test decoding a frame with data longer than typical (no truncation here)."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     frame = b"s123456789"  # Command "s", data "123456789"
     pdu = decoder.decode(frame)
 
@@ -119,7 +119,7 @@ def test_decode_long_data():
 def test_decode_invalid_pdu_class():
     """Test decoding when lookup contains an invalid PDU class."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = int  # Not a valid ModbusPDU subclass
+    decoder.pdu_table[0] = (int, int)  # Not a valid ModbusPDU subclass
     frame = b"M123456"
     with pytest.raises(TypeError):  # Expect instantiation failure
         decoder.decode(frame)
@@ -129,7 +129,7 @@ def test_decode_invalid_pdu_class():
 def test_decode_malformed_frame():
     """Test decoding a frame with invalid data after a valid command."""
     decoder = ThyracontDecodePDU()
-    decoder.lookup[0] = ThyracontRequest
+    decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
     frame = b"M\xff\xfe"  # Valid command, invalid UTF-8 data
     pdu = decoder.decode(frame)
     assert pdu is None  # decode() catches ValueError from data.decode()

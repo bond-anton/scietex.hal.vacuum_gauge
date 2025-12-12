@@ -6,7 +6,7 @@ and execution of Thyracont-specific RS485 requests against a Modbus slave contex
 """
 
 import pytest
-from pymodbus.datastore import ModbusSlaveContext, ModbusSequentialDataBlock
+from pymodbus.datastore import ModbusDeviceContext, ModbusSequentialDataBlock
 
 try:
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
@@ -21,7 +21,7 @@ except ModuleNotFoundError:
 def context():
     """Create a ModbusSlaveContext with initialized holding registers."""
     data_block = ModbusSequentialDataBlock(0, [0] * 14)  # 14 registers for emulation_utils
-    return ModbusSlaveContext(hr=data_block)
+    return ModbusDeviceContext(hr=data_block)
 
 
 # Tests for ThyracontRequest initialization
@@ -38,7 +38,7 @@ def test_request_init_default():
 
 def test_request_init_with_command_and_data():
     """Test initialization with command and data."""
-    request = ThyracontRequest(command="Mread", data=b"123456", slave=2, transaction=3)
+    request = ThyracontRequest(command="Mread", data=b"123456", dev_id=2, transaction_id=3)
     assert request.command == "M"  # Only first character
     assert request.function_code == ord("M")
     assert request.data == "123456"
@@ -96,7 +96,7 @@ async def test_update_datastore_read_pressure(context):
     # Set pressure to 1.234e-3 mbar (encoded as "123417")
     context.store["h"].values[REG_P] = 0xE219  # Low 16 bits
     context.store["h"].values[REG_P + 1] = 0x0001  # High 16 bits
-    request = ThyracontRequest(command="M", slave=2, transaction=1)
+    request = ThyracontRequest(command="M", dev_id=2, transaction_id=1)
     response = await request.update_datastore(context)
     print(context.store["h"].values)
     assert isinstance(response, ThyracontRequest)
@@ -111,7 +111,7 @@ async def test_update_datastore_read_pressure(context):
 @pytest.mark.asyncio
 async def test_update_datastore_write_pressure(context):
     """Test executing a pressure write request ('m')."""
-    request = ThyracontRequest(command="m", data=b"987620", slave=3, transaction=2)
+    request = ThyracontRequest(command="m", data=b"987620", dev_id=3, transaction_id=2)
     response = await request.update_datastore(context)
 
     assert isinstance(response, ThyracontRequest)
@@ -130,7 +130,7 @@ async def test_update_datastore_write_pressure(context):
 @pytest.mark.asyncio
 async def test_update_datastore_gauge_type(context):
     """Test executing a gauge type request ('T')."""
-    request = ThyracontRequest(command="T", slave=1, transaction=4)
+    request = ThyracontRequest(command="T", dev_id=1, transaction_id=4)
     response = await request.update_datastore(context)
 
     assert isinstance(response, ThyracontRequest)
@@ -145,7 +145,7 @@ async def test_update_datastore_gauge_type(context):
 @pytest.mark.asyncio
 async def test_update_datastore_empty_command(context):
     """Test executing a request with no command."""
-    request = ThyracontRequest(data=b"123456", slave=5, transaction=6)
+    request = ThyracontRequest(data=b"123456", dev_id=5, transaction_id=6)
     response = await request.update_datastore(context)
 
     assert isinstance(response, ThyracontRequest)

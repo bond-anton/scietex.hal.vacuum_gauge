@@ -13,7 +13,7 @@ Classes:
         to read and write gauge data.
 """
 
-from typing import Optional, Union
+from typing import Optional
 import sys
 import asyncio
 from logging import Logger
@@ -68,7 +68,7 @@ class ThyracontVacuumGauge(RS485Client):
         The communication backend, either "pymodbus" (default) or "pyserial".
     address : int
         The device (slave) address, inherited from `RS485Client`.
-    con_params : Union[SerialConnectionConfigModel, ModbusSerialConnectionConfigModel]
+    con_params : SerialConnectionConfigModel | ModbusSerialConnectionConfigModel
         The serial connection configuration, inherited from `RS485Client`.
     label : str
         A label for the gauge (default "Thyracont Gauge"), inherited from `RS485Client`.
@@ -117,7 +117,7 @@ class ThyracontVacuumGauge(RS485Client):
     # pylint: disable=too-many-arguments,too-many-positional-arguments,duplicate-code
     def __init__(
         self,
-        connection_config: Union[SerialConnectionConfigModel, ModbusSerialConnectionConfigModel],
+        connection_config: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
         address: int = 1,
         label: Optional[str] = None,
         logger: Optional[Logger] = None,
@@ -188,7 +188,9 @@ class ThyracontVacuumGauge(RS485Client):
             or fails.
         """
         result = None
-        request = ThyracontRequest(command=command, data=data, slave=self.address, transaction=0)
+        request = ThyracontRequest(
+            command=command, data=data, dev_id=self.address, transaction_id=0
+        )
         if self.backend == "pymodbus":
             try:
                 response: Optional[ModbusPDU] = await asyncio.wait_for(
@@ -539,7 +541,7 @@ class ThyracontVacuumGauge(RS485Client):
         """
         Read and return a dictionary of gauge data.
 
-        Currently retrieves only the pressure value, but can be extended to include
+        Currently, retrieves only the pressure value, but can be extended to include
         additional data.
 
         Returns

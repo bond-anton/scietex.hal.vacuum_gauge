@@ -159,5 +159,5 @@ if __name__ == "__main__":
     #
     # print("=====================")
 
-    client_config = Config("/dev/cu.usbserial-142330", baudrate=115200, timeout=0.1)
+    client_config = Config("/dev/cu.usbserial-141330", baudrate=19200, timeout=0.1)
     asyncio.run(main(address=2, client_con=client_config, logger=logger_console))

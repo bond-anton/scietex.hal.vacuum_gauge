@@ -27,7 +27,7 @@ class ThyracontDecodePDU(ThyracontRS485DecodePDU):
 
     def decode(self, frame: bytes) -> Optional[ModbusPDU]:
         """
-        Decode an Thyracont RS485 V2 frame into an `ThyracontRequest` instance.
+        Decode a Thyracont RS485 V2 frame into an `ThyracontRequest` instance.
 
         Parses the frame by extracting the first byte as an Access Code, following two bytes as
         command string, and the remaining bytes as data length and data bytes.
@@ -64,16 +64,16 @@ class ThyracontDecodePDU(ThyracontRS485DecodePDU):
                 access_code_int -= 1
             access_code: AccessCode = AccessCode.from_int(access_code_int)
             command: str = frame[1:3].decode()
-            pdu_type = self.lookupPduClass(frame)
-            if pdu_type is None:
+            pdu_class = self.lookupPduClass(frame)
+            if pdu_class is None:
                 return None
-            pdu_class = pdu_type(
+            pdu = pdu_class(
                 access_code=access_code,  # type: ignore[call-arg]
                 command=command,  # type: ignore[call-arg]
                 data=frame,  # type: ignore[call-arg]
             )
-            pdu_class.decode(frame)
-            pdu_class.registers = list(frame)[3:]
-            return pdu_class
+            pdu.decode(frame)
+            pdu.registers = list(frame)[3:]
+            return pdu
         except (ModbusException, ValueError, IndexError):
             return None

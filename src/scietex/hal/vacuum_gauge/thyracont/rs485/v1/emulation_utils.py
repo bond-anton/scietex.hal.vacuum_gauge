@@ -34,7 +34,7 @@ Functions:
 """
 
 from typing import Optional
-from pymodbus.datastore import ModbusSlaveContext
+from pymodbus.datastore import ModbusDeviceContext
 from scietex.hal.serial.utilities.numeric import split_32bit, combine_32bit
 from .data import _pressure_encode, _pressure_decode
 
@@ -52,7 +52,7 @@ REG_ATM_SEL = 12
 REG_ZERO_SEL = 13
 
 
-def read_two_regs(context: ModbusSlaveContext, start_reg: int) -> int:
+def read_two_regs(context: ModbusDeviceContext, start_reg: int) -> int:
     """
     Reads a 32-bit value from two consecutive 16-bit holding registers.
 
@@ -76,7 +76,7 @@ def read_two_regs(context: ModbusSlaveContext, start_reg: int) -> int:
     return combine_32bit(a, b)
 
 
-def write_two_regs(context: ModbusSlaveContext, value: int, start_reg: int) -> None:
+def write_two_regs(context: ModbusDeviceContext, value: int, start_reg: int) -> None:
     """
     Writes a 32-bit value to two consecutive 16-bit holding registers.
 
@@ -97,7 +97,7 @@ def write_two_regs(context: ModbusSlaveContext, value: int, start_reg: int) -> N
     context.store["h"].values[start_reg + 1] = b
 
 
-def pressure_from_reg(context: ModbusSlaveContext, start_reg: int) -> Optional[float]:
+def pressure_from_reg(context: ModbusDeviceContext, start_reg: int) -> Optional[float]:
     """
     Reads and decodes a pressure value from two registers.
 
@@ -120,7 +120,7 @@ def pressure_from_reg(context: ModbusSlaveContext, start_reg: int) -> Optional[f
     return _pressure_decode(f"{p_encoded:06d}")
 
 
-def pressure_to_reg(context: ModbusSlaveContext, p: float, start_reg: int) -> None:
+def pressure_to_reg(context: ModbusDeviceContext, p: float, start_reg: int) -> None:
     """
     Encodes and writes a pressure value to two registers.
 
@@ -142,7 +142,7 @@ def pressure_to_reg(context: ModbusSlaveContext, p: float, start_reg: int) -> No
 
 
 # pylint: disable=too-many-branches,too-many-statements
-def parse_command(context: ModbusSlaveContext, command: str, data: str) -> bytes:
+def parse_command(context: ModbusDeviceContext, command: str, data: str) -> bytes:
     """
     Parses and executes Thyracont-specific ASCII commands, returning a response.
 

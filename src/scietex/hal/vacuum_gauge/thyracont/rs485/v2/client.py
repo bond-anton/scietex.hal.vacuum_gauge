@@ -13,7 +13,7 @@ Classes:
         to read and write gauge data.
 """
 
-from typing import Optional, Union, Callable
+from typing import Optional, Callable
 import sys
 import asyncio
 from functools import wraps
@@ -138,7 +138,7 @@ class ThyracontVacuumGauge(RS485Client):
     # pylint: disable=too-many-arguments,too-many-positional-arguments,duplicate-code
     def __init__(
         self,
-        connection_config: Union[SerialConnectionConfigModel, ModbusSerialConnectionConfigModel],
+        connection_config: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
         address: int = 1,
         label: Optional[str] = None,
         logger: Optional[Logger] = None,
@@ -195,7 +195,11 @@ class ThyracontVacuumGauge(RS485Client):
         """
         result = None
         request = ThyracontRequest(
-            access_code=access_code, command=command, data=data, slave=self.address, transaction=0
+            access_code=access_code,
+            command=command,
+            data=data,
+            dev_id=self.address,
+            transaction_id=0,
         )
         self.logger.debug("REQ: %s", request)
         if self.backend == "pymodbus":
@@ -277,9 +281,15 @@ class ThyracontVacuumGauge(RS485Client):
                 return result
         return result
 
-    def process_error_response(self, data: bytes):
+    def process_error_response(self, data: bytes | str):
         """Process error."""
-        self.logger.error("ERROR: %s", ErrorMessage.from_str(data.decode()).description())
+        if isinstance(data, bytes):
+            err_msg = ErrorMessage.from_str(data.decode()).description()
+        elif isinstance(data, str):
+            err_msg = ErrorMessage.from_str(data).description()
+        else:
+            err_msg = "Unknown error"
+        self.logger.error("ERROR: %s", err_msg)
 
     async def get_model(self) -> Optional[str]:
         """Retrieve the gauge model identifier."""
@@ -314,14 +324,14 @@ class ThyracontVacuumGauge(RS485Client):
         """Restart the gauge."""
         return await self.request_gauge(access_code=AccessCode.WRITE, command="DR")
 
-    async def get_operating_hours(self) -> Optional[dict[str, Union[float, None]]]:
+    async def get_operating_hours(self) -> Optional[dict[str, Optional[float]]]:
         """Retrieve operating-hours statistics."""
         oh_data: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="OH")
         return decode_operating_hours(oh_data)
 
     async def get_sensor_statistics(
-        self, sensor: Union[Sensor, int]
-    ) -> Optional[dict[str, Union[float, str, None]]]:
+        self, sensor: Sensor | int
+    ) -> Optional[dict[str, Optional[float | str]]]:
         """Retrieve sensor statistics and wear status."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         if _sensor not in (Sensor.PIRANI, Sensor.HOT_CATHODE, Sensor.COLD_CATHODE):
@@ -381,8 +391,8 @@ class ThyracontVacuumGauge(RS485Client):
 
     async def streaming_mode(
         self,
-        mode: Optional[Union[StreamingMode, int]] = None,
-        additional_data: Optional[list[Union[int, str]]] = None,
+        mode: Optional[StreamingMode | int] = None,
+        additional_data: Optional[list[int | str]] = None,
     ) -> bool:
         """Enable/disable streaming mode."""
         data: str = f"{StreamingMode.V1.value}"
@@ -401,7 +411,7 @@ class ThyracontVacuumGauge(RS485Client):
             return False
         return True
 
-    async def measure(self, sensor: Optional[Union[Sensor, int]] = None) -> Optional[float]:
+    async def measure(self, sensor: Optional[Sensor | int] = None) -> Optional[float]:
         """
         Measure the current pressure in millibars.
 
@@ -424,14 +434,14 @@ class ThyracontVacuumGauge(RS485Client):
         return None
 
     @parse_float
-    async def get_temperature(self, sensor: Union[Sensor, int]) -> Optional[str]:
+    async def get_temperature(self, sensor: Sensor | int) -> Optional[str]:
         """Get sensor temperature"""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         if _sensor not in (Sensor.PIEZO, Sensor.AMBIENT):
             return None
         return await self.request_gauge(access_code=AccessCode.READ, command=f"T{_sensor.value}")
 
-    async def get_relay(self, rl_n: int) -> Optional[dict[str, Union[float, str, None]]]:
+    async def get_relay(self, rl_n: int) -> Optional[dict[str, Optional[float | str]]]:
         """Retrieve relay settings"""
         rl_data: Optional[str] = await self.request_gauge(
             access_code=AccessCode.READ, command=f"R{rl_n}"
@@ -444,14 +454,14 @@ class ThyracontVacuumGauge(RS485Client):
         return None
 
     async def set_relay(
-        self, rl_n: int, settings: dict[str, Union[float, str, None]]
-    ) -> Optional[dict[str, Union[float, str, None]]]:
+        self, rl_n: int, settings: dict[str, Optional[float | str]]
+    ) -> Optional[dict[str, Optional[float | str]]]:
         """Set relay settings."""
         data = encode_relay_data(settings)
         await self.request_gauge(access_code=AccessCode.WRITE, command=f"R{rl_n}", data=data)
         return await self.get_relay(rl_n)
 
-    async def reset_relay(self, rl_n: int) -> Optional[dict[str, Union[float, str, None]]]:
+    async def reset_relay(self, rl_n: int) -> Optional[dict[str, Optional[float | str]]]:
         """Reset relay to default value."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command=f"R{rl_n}")
         return await self.get_relay(rl_n)
@@ -466,7 +476,7 @@ class ThyracontVacuumGauge(RS485Client):
                 pass
         return None
 
-    async def set_display_units(self, units: Union[DisplayUnits, str]) -> Optional[DisplayUnits]:
+    async def set_display_units(self, units: DisplayUnits | str) -> Optional[DisplayUnits]:
         """Set display units."""
         _units: DisplayUnits = (
             units if isinstance(units, DisplayUnits) else DisplayUnits.from_str(units)
@@ -494,7 +504,7 @@ class ThyracontVacuumGauge(RS485Client):
         return None
 
     async def set_display_orientation(
-        self, direction: Union[DisplayOrientation, int]
+        self, direction: DisplayOrientation | int
     ) -> Optional[DisplayOrientation]:
         """Set display orientation."""
         _direction: DisplayOrientation = (
@@ -531,7 +541,7 @@ class ThyracontVacuumGauge(RS485Client):
                 pass
         return None
 
-    async def set_display_data_source(self, sensor: Union[Sensor, int]) -> Optional[Sensor]:
+    async def set_display_data_source(self, sensor: Sensor | int) -> Optional[Sensor]:
         """Set display data source to value."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -587,7 +597,7 @@ class ThyracontVacuumGauge(RS485Client):
         """
         return await self.request_gauge(access_code=AccessCode.READ, command="DL")
 
-    async def set_digital_logic(self, state: Union[bool, int]) -> bool:
+    async def set_digital_logic(self, state: bool | int) -> bool:
         """
         Set Digital/Degas logic to provided state.
         Degas Logic is active low (0/False, 1/True) (VSH)
@@ -606,7 +616,7 @@ class ThyracontVacuumGauge(RS485Client):
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DL")
         return await self.get_digital_logic()
 
-    async def get_sensor_transition(self) -> Optional[dict[str, Union[int, float, None]]]:
+    async def get_sensor_transition(self) -> Optional[dict[str, Optional[int | float]]]:
         """Retrieve sensor transition rule."""
         result: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="ST")
         if result is not None:
@@ -614,14 +624,14 @@ class ThyracontVacuumGauge(RS485Client):
         return None
 
     async def set_sensor_transition(
-        self, transition_rule: dict[str, Union[int, float, None]]
-    ) -> Optional[dict[str, Union[int, float, None]]]:
+        self, transition_rule: dict[str, Optional[int | float]]
+    ) -> Optional[dict[str, Optional[int | float]]]:
         """Set sensor transition rule."""
         data = encode_sensor_transition(transition_rule)
         await self.request_gauge(access_code=AccessCode.WRITE, command="ST", data=data)
         return await self.get_sensor_transition()
 
-    async def reset_sensor_transition(self) -> Optional[dict[str, Union[int, float, None]]]:
+    async def reset_sensor_transition(self) -> Optional[dict[str, Optional[int | float]]]:
         """Reset sensor transition to default rule."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="ST")
         return await self.get_sensor_transition()
@@ -642,7 +652,7 @@ class ThyracontVacuumGauge(RS485Client):
         return None
 
     async def set_cathode_control_mode(
-        self, mode: Union[CathodeControlMode, int, bool]
+        self, mode: CathodeControlMode | int | bool
     ) -> Optional[CathodeControlMode]:
         """Set cathode control mode (MAN/AUTO)."""
         if isinstance(mode, (bool, int)):
@@ -702,12 +712,12 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.request_gauge(access_code=AccessCode.READ, command="FS")
 
     @parse_float
-    async def get_gas_correction(self, sensor: Union[Sensor, int]) -> Optional[str]:
+    async def get_gas_correction(self, sensor: Sensor | int) -> Optional[str]:
         """Retrieve gas correction coefficient for provided sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         return await self.request_gauge(access_code=AccessCode.READ, command=f"C{_sensor.value}")
 
-    async def set_gas_correction(self, sensor: Union[Sensor, int], corr: float) -> Optional[float]:
+    async def set_gas_correction(self, sensor: Sensor | int, corr: float) -> Optional[float]:
         """Set gas correction coefficient for provided sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -717,7 +727,7 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_gas_correction(sensor)
 
-    async def reset_gas_correction(self, sensor: Union[Sensor, int]) -> Optional[float]:
+    async def reset_gas_correction(self, sensor: Sensor | int) -> Optional[float]:
         """Set gas correction coefficient for provided sensor to default value."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -725,7 +735,7 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_gas_correction(sensor)
 
-    async def get_output_characteristic(self) -> Optional[dict[str, Union[str, int, float, None]]]:
+    async def get_output_characteristic(self) -> Optional[dict[str, Optional[str | int | float]]]:
         """Retrieve output characteristics"""
         oc: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="OC")
         if oc is not None:
@@ -737,18 +747,18 @@ class ThyracontVacuumGauge(RS485Client):
 
     async def reset_output_characteristic(
         self,
-    ) -> Optional[dict[str, Union[str, int, float, None]]]:
+    ) -> Optional[dict[str, Optional[str | int | float]]]:
         """Reset output characteristics to default value"""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="OC")
         return await self.get_output_characteristic()
 
     async def set_tab_output_characteristic(
         self,
-        tab: dict[str, Union[str, int, float, None]],
-        nodes: list[dict[str, Union[str, int, float, None]]],
+        tab: dict[str, Optional[str | int | float]],
+        nodes: list[dict[str, Optional[str | int | float]]],
     ) -> tuple[
-        Optional[dict[str, Union[str, int, float, None]]],
-        Optional[list[dict[str, Union[str, int, float, None]]]],
+        Optional[dict[str, Optional[str | int | float]]],
+        Optional[list[dict[str, Optional[str | int | float]]]],
     ]:
         """Set output characteristics."""
         tab_data = encode_tab_output_characteristic(tab).encode()
@@ -799,14 +809,14 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.get_controller_enabled()
 
     @parse_int
-    async def get_low_pass_filter(self, sensor: Union[Sensor, int]) -> Optional[str]:
+    async def get_low_pass_filter(self, sensor: Sensor | int) -> Optional[str]:
         """Retrieve low-pass filter value for sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         return await self.request_gauge(
             access_code=AccessCode.READ, command="LF", data=f"{_sensor.value}".encode()
         )
 
-    async def set_low_pass_filter(self, sensor: Union[Sensor, int], lf: int) -> Optional[int]:
+    async def set_low_pass_filter(self, sensor: Sensor | int, lf: int) -> Optional[int]:
         """Set low-pass filter value for sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -814,9 +824,7 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_low_pass_filter(sensor)
 
-    async def reset_low_pass_filter(
-        self, sensor: Optional[Union[Sensor, int]] = None
-    ) -> Optional[int]:
+    async def reset_low_pass_filter(self, sensor: Optional[Sensor | int] = None) -> Optional[int]:
         """Reset low-pass filter to default value."""
         data: Optional[bytes] = None
         if sensor is not None:

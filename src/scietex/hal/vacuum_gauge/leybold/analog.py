@@ -16,7 +16,7 @@ Key Features:
     - Supports atmospheric gas adjustments with specific correction factors for known gases.
 """
 
-from typing import Union, Optional
+from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
@@ -66,7 +66,7 @@ class TTR101NGauge(ExponentialVacuumGauge):
         Atmosphere.XE: 1.0,  # Unknown; default value
     }
 
-    def __init__(self, atmosphere: Optional[Union[str, Atmosphere]] = None):
+    def __init__(self, atmosphere: Optional[str | Atmosphere] = None):
         """
         Initializes the TTR101NGauge instance.
 
@@ -86,9 +86,7 @@ class TTR101NGauge(ExponentialVacuumGauge):
             atmosphere=atmosphere,
         )
 
-    def convert_voltage(
-        self, voltage: Union[float, NDArray[np.float64]]
-    ) -> Union[float, NDArray[np.float64]]:
+    def convert_voltage(self, voltage: float | NDArray[np.float64]) -> float | NDArray[np.float64]:
         """
         Converts analog output voltage to pressure (mbar) using the TTR 101 N formula.
 

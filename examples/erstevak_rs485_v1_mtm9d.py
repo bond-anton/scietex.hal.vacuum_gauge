@@ -153,5 +153,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logger_console = logging.getLogger()
 
-    client_config = Config("/dev/cu.usbserial-142320", baudrate=19200, timeout=0.1)
+    client_config = Config("/dev/cu.usbserial-141330", baudrate=19200, timeout=0.1)
     asyncio.run(main(address=2, client_con=client_config, logger=logger_console))

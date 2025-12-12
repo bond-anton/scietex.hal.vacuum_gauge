@@ -20,7 +20,7 @@ Key Features:
     - Offers both exponential and interpolation-based conversion methods.
 """
 
-from typing import Union, Optional
+from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
@@ -82,7 +82,7 @@ class ExponentialVacuumGauge(AnalogSensorInterface):
         v_max: float = 10.0,
         p_min: float = 5e-5,
         p_max: float = 1.5e3,
-        atmosphere: Optional[Union[str, Atmosphere]] = None,
+        atmosphere: Optional[str | Atmosphere] = None,
     ):
         """
         Initializes the ExponentialVacuumGauge instance.
@@ -118,9 +118,7 @@ class ExponentialVacuumGauge(AnalogSensorInterface):
         else:
             self.atmosphere = atmosphere if atmosphere is not None else Atmosphere.AIR
 
-    def convert_voltage(
-        self, voltage: Union[float, NDArray[np.float64]]
-    ) -> Union[float, NDArray[np.float64]]:
+    def convert_voltage(self, voltage: float | NDArray[np.float64]) -> float | NDArray[np.float64]:
         """
         Converts analog output voltage to pressure (mbar).
 
@@ -207,7 +205,7 @@ class InterpolationVacuumGauge(LinearInterpolatorSensor):
         v_max: float = 10.0,
         p_min: float = 1e-6,
         p_max: float = 1000.0,
-        atmosphere: Optional[Union[str, Atmosphere]] = None,
+        atmosphere: Optional[str | Atmosphere] = None,
         extrapolate: Optional[bool] = None,
     ):
         """
@@ -242,9 +240,7 @@ class InterpolationVacuumGauge(LinearInterpolatorSensor):
         else:
             self.atmosphere = atmosphere if atmosphere is not None else Atmosphere.AIR
 
-    def convert_voltage(
-        self, voltage: Union[float, NDArray[np.float64]]
-    ) -> Union[float, NDArray[np.float64]]:
+    def convert_voltage(self, voltage: float | NDArray[np.float64]) -> float | NDArray[np.float64]:
         """
         Converts analog output voltage to pressure (mbar) using linear interpolation.
 

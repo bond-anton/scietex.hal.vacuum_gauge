@@ -16,7 +16,7 @@ Key Features:
     - Clamps voltage and pressure to model-specific ranges.
 """
 
-from typing import Optional, Union
+from typing import Optional
 
 from ..base.analog import InterpolationVacuumGauge
 from ..base.atmosphere import Atmosphere
@@ -44,7 +44,7 @@ class APGMGauge(InterpolationVacuumGauge):
 
     def __init__(
         self,
-        atmosphere: Optional[Union[str, Atmosphere]] = None,
+        atmosphere: Optional[str | Atmosphere] = None,
         extrapolate: Optional[bool] = False,
     ):
         """
@@ -90,7 +90,7 @@ class APGLGauge(InterpolationVacuumGauge):
 
     def __init__(
         self,
-        atmosphere: Optional[Union[str, Atmosphere]] = None,
+        atmosphere: Optional[str | Atmosphere] = None,
         extrapolate: Optional[bool] = False,
     ):
         """

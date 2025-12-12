@@ -52,13 +52,14 @@ class ThyracontRS485ASCIIFramer(FramerAscii):
 
     START = b""  # no starting byte.
     END = b"\r"
+    EMPTY = b""
     MIN_SIZE = 6  # Lower data min size to 4 bytes.
 
     def decode(self, data: bytes) -> tuple[int, int, int, bytes]:
         """
         Customized decode ADU function.
 
-        Decodes an Thyracont RS485 ASCII frame from raw bytes into its components: the number of
+        Decodes a Thyracont RS485 ASCII frame from raw bytes into its components: the number of
         bytes used, the device ID, a placeholder transaction ID (always 0), and the message data.
         The frame format is `<3-digit-device-id><message><1-byte-checksum>\\r`.
         If the frame is incomplete or invalid (e.g., missing end byte or incorrect checksum),
@@ -83,31 +84,30 @@ class ThyracontRS485ASCIIFramer(FramerAscii):
         len_data = len(data)
         while True:
             if len_data - len_used < self.MIN_SIZE:
-                # Not enough data to decode
-                return len_used, 0, 0, self.EMPTY
+                break
             data_buffer = data[len_used:]
             if (data_end := data_buffer.find(self.END)) == -1:
-                # END byte sequence not found.
-                return len_used, 0, 0, self.EMPTY
+                break
             dev_id = int(data_buffer[0:3], 10)  # First 3 bytes for device (slave) id
             checksum = data_buffer[data_end - 1]
             msg = data_buffer[0 : data_end - 1]
             len_used += data_end + 1
             if not check_checksum(msg, checksum):
-                return len_used, 0, 0, self.EMPTY
+                break
             return len_used, dev_id, 0, msg[3:]
+        return len_used, 0, 0, self.EMPTY
 
-    def encode(self, data: bytes, device_id: int, _tid: int) -> bytes:
+    def encode(self, payload: bytes, device_id: int, _tid: int) -> bytes:
         """
         Customized encode ADU function.
 
-        Encodes a message into an Thyracont RS485 ASCII frame by prepending a 3-digit device ID,
+        Encodes a message into a Thyracont RS485 ASCII frame by prepending a 3-digit device ID,
         appending a calculated checksum, and framing it with the `START` (empty) and `END` (`\\r`)
         delimiters. The transaction ID (`_tid`) is ignored as it’s not part of this protocol.
 
         Parameters
         ----------
-        data : bytes
+        payload : bytes
             The message data to encode (e.g., Modbus PDU).
         device_id : int
             The device (slave) ID to include in the frame, formatted as a 3-digit string.
@@ -120,11 +120,13 @@ class ThyracontRS485ASCIIFramer(FramerAscii):
             The fully encoded frame, e.g., `b"001<message><checksum>\\r"`.
         """
         dev_id = f"{device_id:03d}".encode()  # encode device id into first 3 bytes.
-        checksum = calc_checksum(dev_id + data)
-        frame = self.START + dev_id + data + bytes([checksum]) + self.END
+        checksum = calc_checksum(dev_id + payload)
+        frame = self.START + dev_id + payload + bytes([checksum]) + self.END
         return frame
 
-    def _processIncomingFrame(self, data: bytes) -> tuple[int, Optional[ModbusPDU]]:
+    def handleFrame(
+        self, data: bytes, exp_devid: int, exp_tid: int
+    ) -> tuple[int, Optional[ModbusPDU]]:
         """
         Process new packet pattern.
 
@@ -137,6 +139,10 @@ class ThyracontRS485ASCIIFramer(FramerAscii):
         ----------
         data : bytes
             The raw byte stream containing one or more frames.
+        exp_devid : int
+            Device id (unused in this protocol, included for compatibility).
+        exp_tid : int
+            Transaction ID (unused in this protocol, included for compatibility).
 
         Returns
         -------

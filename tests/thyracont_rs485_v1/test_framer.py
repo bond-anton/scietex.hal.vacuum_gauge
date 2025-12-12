@@ -169,7 +169,7 @@ def test_process_incoming_frame_valid(framer):
     """Test processing a valid incoming frame."""
     data = b"001T"
     data = data + bytes([calc_checksum(data)]) + b"\r"
-    used_len, result = framer._processIncomingFrame(data)
+    used_len, result = framer.handleFrame(data, 0, 0)
     assert used_len == 6
     assert isinstance(result, ModbusPDU)
     assert result.dev_id == 1
@@ -180,7 +180,7 @@ def test_process_incoming_frame_valid(framer):
 def test_process_incoming_frame_invalid_checksum(framer):
     """Test processing a frame with an invalid PDU."""
     data = b"001XX@\r"
-    used_len, result = framer._processIncomingFrame(data)
+    used_len, result = framer.handleFrame(data, 0, 0)
     assert used_len == 7
     assert result is None
 
@@ -188,7 +188,7 @@ def test_process_incoming_frame_invalid_checksum(framer):
 # pylint: disable=redefined-outer-name,protected-access
 def test_process_incoming_frame_no_data(framer):
     """Test processing with no data."""
-    used_len, result = framer._processIncomingFrame(b"")
+    used_len, result = framer.handleFrame(b"", 0, 0)
     assert used_len == 0
     assert result is None
 

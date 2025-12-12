@@ -29,9 +29,10 @@ class ThyracontRS485DecodePDU(DecodePDU):
 
     Attributes
     ----------
-    lookup : dict[int, type[ThyracontRequest]]
+    pdu_table : dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]]
         A dictionary mapping function codes to PDU classes (only 0 is used, initially empty).
-    sub_lookup : dict[int, dict[int, type[ModbusPDU]]]
+    pdu_sub_table : dict[
+            int, dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]]]
         A nested dictionary for sub-function code lookups (unused in this implementation).
     is_server : bool
         Indicates whether the decoder is used in server mode (inherited from `DecodePDU`).
@@ -43,7 +44,7 @@ class ThyracontRS485DecodePDU(DecodePDU):
     lookupPduClass(data: bytes) -> Optional[type[ModbusPDU]]
         Retrieves the PDU class for decoding (always `ThyracontRequest` or None).
     decode(frame: bytes) -> Optional[ModbusPDU]
-        Decodes an Thyracont frame into an `ThyracontRequest` instance.
+        Decodes a Thyracont frame into an `ThyracontRequest` instance.
     """
 
     def __init__(self, is_server: bool = False) -> None:
@@ -60,8 +61,8 @@ class ThyracontRS485DecodePDU(DecodePDU):
             Whether the decoder is used in server mode. Defaults to False (client mode).
         """
         super().__init__(is_server)
-        self.lookup = {}
-        self.sub_lookup = {}
+        self.pdu_table: dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]] = {}
+        self.pdu_sub_table: dict[int, dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]]] = {}
 
     def lookupPduClass(self, data: bytes) -> Optional[type[ModbusPDU]]:
         """
@@ -83,11 +84,12 @@ class ThyracontRS485DecodePDU(DecodePDU):
             The PDU class (`ThyracontRequest`) if registered in `lookup[0]`, otherwise None.
         """
         _ = data  # Unused parameter, kept for compatibility
-        return self.lookup.get(0, None)
+        function_code = 0
+        return self.pdu_table.get(function_code, (None, None))[self.pdu_inx]
 
     def decode(self, frame: bytes) -> Optional[ModbusPDU]:
         """
-        Decode an Thyracont frame into an `ThyracontRequest` instance.
+        Decode a Thyracont frame into an `ThyracontRequest` instance.
 
         Parses the frame by extracting the first byte as a command character and the remaining
         bytes as data. Creates an `ThyracontRequest` instance with the command and data, then
@@ -118,13 +120,16 @@ class ThyracontRS485DecodePDU(DecodePDU):
         if not frame:
             return None
         try:
-            command: str = frame[0:1].decode()
-            pdu_type = self.lookupPduClass(frame)
-            if pdu_type is None:
+            function_code = 0
+            # pdu_type = self.lookupPduClass(frame)
+            # if pdu_type is None:
+            #     return None
+            if not (pdu_class := self.pdu_table.get(function_code, (None, None))[self.pdu_inx]):
                 return None
-            pdu_class = pdu_type(command=command, data=frame[1:])  # type: ignore[call-arg]
-            pdu_class.decode(frame[1:])
-            pdu_class.registers = list(frame)[1:7]
-            return pdu_class
+            command: str = frame[0:1].decode()
+            pdu = pdu_class(command=command, data=frame[1:])  # type: ignore[call-arg]
+            pdu.decode(frame[1:])
+            pdu.registers = list(frame)[1:7]
+            return pdu
         except (ModbusException, ValueError, IndexError):
             return None

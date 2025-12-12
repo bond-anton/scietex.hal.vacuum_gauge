@@ -7,7 +7,7 @@ ASCII commands.
 """
 
 import pytest
-from pymodbus.datastore import ModbusSlaveContext, ModbusSequentialDataBlock
+from pymodbus.datastore import ModbusDeviceContext, ModbusSequentialDataBlock
 
 try:
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import (
@@ -56,7 +56,7 @@ def context():
     """Create a ModbusSlaveContext with initialized holding registers."""
     # Initialize with 14 registers (0-13) to cover all REG_* constants
     data_block = ModbusSequentialDataBlock(0, [0] * 14)
-    return ModbusSlaveContext(hr=data_block)
+    return ModbusDeviceContext(hr=data_block)
 
 
 # Tests for read_two_regs

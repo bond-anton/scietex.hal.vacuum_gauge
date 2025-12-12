@@ -18,7 +18,7 @@ Key Features:
     - Clamps voltage inputs to reasonable ranges based on gauge specifications.
 """
 
-from typing import Union, Optional
+from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
@@ -63,7 +63,7 @@ class MTP4DGauge(ExponentialVacuumGauge):
         Atmosphere.XE: 1.0,  # Unknown; default value
     }
 
-    def __init__(self, atmosphere: Optional[Union[str, Atmosphere]] = None):
+    def __init__(self, atmosphere: Optional[str | Atmosphere] = None):
         """
         Initializes the MTP4DGauge instance.
 
@@ -140,7 +140,7 @@ class MTM9DGauge(ExponentialVacuumGauge):
         Atmosphere.XE: 0.41,
     }
 
-    def __init__(self, atmosphere: Optional[Union[str, Atmosphere]] = None):
+    def __init__(self, atmosphere: Optional[str | Atmosphere] = None):
         """
         Initializes the MTM9DGauge instance.
 
@@ -161,9 +161,7 @@ class MTM9DGauge(ExponentialVacuumGauge):
         )
 
     # pylint: disable=duplicate-code
-    def convert_voltage(
-        self, voltage: Union[float, NDArray[np.float64]]
-    ) -> Union[float, NDArray[np.float64]]:
+    def convert_voltage(self, voltage: float | NDArray[np.float64]) -> float | NDArray[np.float64]:
         """
         Converts analog output voltage to pressure (mbar) using the MTM9D formula with
         pressure-dependent coefficients.

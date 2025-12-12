@@ -14,7 +14,7 @@ Classes:
 
 from typing import Optional
 from pymodbus.pdu import ModbusPDU
-from pymodbus.datastore import ModbusSlaveContext
+from pymodbus.datastore import ModbusDeviceContext
 
 from .emulation_utils import parse_command
 
@@ -66,8 +66,8 @@ class ThyracontRequest(ModbusPDU):
         self,
         command: Optional[str] = None,
         data: Optional[bytes] = None,
-        slave=1,
-        transaction=0,
+        dev_id=1,
+        transaction_id=0,
     ) -> None:
         """
         Initialize an ThyracontRequest instance.
@@ -84,12 +84,12 @@ class ThyracontRequest(ModbusPDU):
         data : Optional[bytes], optional
             The data payload in bytes (e.g., b"123456"); limited to 6 bytes and decoded to a string.
             Defaults to None, resulting in an empty data string ("").
-        slave : int, optional
+        dev_id : int, optional
             The device (slave) ID. Defaults to 1.
-        transaction : int, optional
+        transaction_id : int, optional
             The transaction ID. Defaults to 0.
         """
-        super().__init__(dev_id=slave, transaction_id=transaction)
+        super().__init__(dev_id=dev_id, transaction_id=transaction_id)
         self.command: str = ""
         if command is not None and len(command) > 0:
             self.command = command[0]
@@ -137,7 +137,7 @@ class ThyracontRequest(ModbusPDU):
         """
         self.data = data.decode()
 
-    async def update_datastore(self, context: ModbusSlaveContext) -> ModbusPDU:
+    async def update_datastore(self, context: ModbusDeviceContext) -> ModbusPDU:
         """
         Execute the request against a Modbus slave context and return a response PDU.
 
@@ -161,8 +161,8 @@ class ThyracontRequest(ModbusPDU):
         response = ThyracontRequest(
             self.command,
             data,
-            slave=self.dev_id,
-            transaction=self.transaction_id,
+            dev_id=self.dev_id,
+            transaction_id=self.transaction_id,
         )
         response.registers = list(data)
         return response
