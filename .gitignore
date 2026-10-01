@@ -6,3 +6,5 @@
 src/scietex.hal.vacuum_gauge.egg-info
 .coverage
 htmlcov
+__pycache__/
+*.py[cod]
