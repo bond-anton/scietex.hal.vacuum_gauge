@@ -2,26 +2,24 @@
 Tests for the scietex.hal.vacuum_gauge.Thyracont.rs485.v1.request module.
 
 This module tests the ThyracontRequest class, ensuring correct initialization, encoding, decoding,
-and execution of Thyracont-specific RS485 requests against a Modbus slave context.
+and execution of Thyracont-specific RS485 requests against a mutable register store.
 """
 
 import pytest
-from pymodbus.datastore import ModbusDeviceContext, ModbusSequentialDataBlock
 
 try:
-    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import REG_P
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
     from scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation_utils import REG_P
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
 
 
-# Fixture for ModbusSlaveContext
+# Fixture for the register store
 @pytest.fixture
-def context():
-    """Create a ModbusSlaveContext with initialized holding registers."""
-    data_block = ModbusSequentialDataBlock(0, [0] * 14)  # 14 registers for emulation_utils
-    return ModbusDeviceContext(hr=data_block)
+def store():
+    """Create a plain list of 14 holding-register values."""
+    return [0] * 14
 
 
 # Tests for ThyracontRequest initialization
@@ -88,31 +86,30 @@ def test_request_decode_empty():
     assert request.rtu_frame_size == 0
 
 
-# Tests for update_datastore
+# Tests for datastore_update
 # pylint: disable=redefined-outer-name
 @pytest.mark.asyncio
-async def test_update_datastore_read_pressure(context):
+async def test_datastore_update_read_pressure(store):
     """Test executing a pressure read request ('M')."""
     # Set pressure to 1.234e-3 mbar (encoded as "123417")
-    context.store["h"].values[REG_P] = 0xE219  # Low 16 bits
-    context.store["h"].values[REG_P + 1] = 0x0001  # High 16 bits
-    request = ThyracontRequest(command="M", dev_id=2, transaction_id=1)
-    response = await request.update_datastore(context)
-    print(context.store["h"].values)
+    store[REG_P] = 0xE219  # Low 16 bits
+    store[REG_P + 1] = 0x0001  # High 16 bits
+    request = ThyracontRequest(command="M", dev_id=2, transaction_id=1, store=store)
+    response = await request.datastore_update(None, 1)
     assert isinstance(response, ThyracontRequest)
     assert response.command == "M"
     assert response.data == "123417"
-    assert response.registers == [49, 50, 51, 52, 49, 55]  # ASCII bytes for "123403"
+    assert response.registers == [49, 50, 51, 52, 49, 55]  # ASCII bytes for "123417"
     assert response.dev_id == 2
     assert response.transaction_id == 1
 
 
 # pylint: disable=redefined-outer-name
 @pytest.mark.asyncio
-async def test_update_datastore_write_pressure(context):
+async def test_datastore_update_write_pressure(store):
     """Test executing a pressure write request ('m')."""
-    request = ThyracontRequest(command="m", data=b"987620", dev_id=3, transaction_id=2)
-    response = await request.update_datastore(context)
+    request = ThyracontRequest(command="m", data=b"987620", dev_id=3, transaction_id=2, store=store)
+    response = await request.datastore_update(None, 1)
 
     assert isinstance(response, ThyracontRequest)
     assert response.command == "m"
@@ -122,16 +119,16 @@ async def test_update_datastore_write_pressure(context):
     assert response.transaction_id == 2
     # Verify written value
     p_encoded = int("987620")
-    assert context.store["h"].values[REG_P] == p_encoded & 0xFFFF
-    assert context.store["h"].values[REG_P + 1] == (p_encoded >> 16) & 0xFFFF
+    assert store[REG_P] == p_encoded & 0xFFFF
+    assert store[REG_P + 1] == (p_encoded >> 16) & 0xFFFF
 
 
 # pylint: disable=redefined-outer-name
 @pytest.mark.asyncio
-async def test_update_datastore_gauge_type(context):
+async def test_datastore_update_gauge_type(store):
     """Test executing a gauge type request ('T')."""
-    request = ThyracontRequest(command="T", dev_id=1, transaction_id=4)
-    response = await request.update_datastore(context)
+    request = ThyracontRequest(command="T", dev_id=1, transaction_id=4, store=store)
+    response = await request.datastore_update(None, 1)
 
     assert isinstance(response, ThyracontRequest)
     assert response.command == "T"
@@ -143,10 +140,10 @@ async def test_update_datastore_gauge_type(context):
 
 # pylint: disable=redefined-outer-name
 @pytest.mark.asyncio
-async def test_update_datastore_empty_command(context):
+async def test_datastore_update_empty_command(store):
     """Test executing a request with no command."""
-    request = ThyracontRequest(data=b"123456", dev_id=5, transaction_id=6)
-    response = await request.update_datastore(context)
+    request = ThyracontRequest(data=b"123456", dev_id=5, transaction_id=6, store=store)
+    response = await request.datastore_update(None, 1)
 
     assert isinstance(response, ThyracontRequest)
     assert response.command == ""
@@ -164,18 +161,18 @@ def test_request_decode_invalid_utf8():
         request.decode(b"\xff\xfe")  # Invalid UTF-8 sequence
 
 
-# Edge case: update_datastore with invalid context interaction
+# Edge case: datastore_update with invalid data
 # pylint: disable=redefined-outer-name
 @pytest.mark.asyncio
-async def test_update_datastore_invalid_data(context):
+async def test_datastore_update_invalid_data(store):
     """Test executing a request with invalid data for a command."""
-    request = ThyracontRequest(command="m", data=b"abc123")  # Invalid integer for pressure
-    response = await request.update_datastore(context)
+    request = ThyracontRequest(command="m", data=b"abc123", store=store)  # Invalid pressure value
+    response = await request.datastore_update(None, 1)
     assert response.data == "abc123"  # Echoes input despite failure
     assert response.registers == [97, 98, 99, 49, 50, 51]  # ASCII bytes for "abc123"
-    # Context unchanged due to ValueError in parse_command
-    assert context.store["h"].values[REG_P] == 0
-    assert context.store["h"].values[REG_P + 1] == 0
+    # Store unchanged due to ValueError in parse_command
+    assert store[REG_P] == 0
+    assert store[REG_P + 1] == 0
 
 
 if __name__ == "__main__":

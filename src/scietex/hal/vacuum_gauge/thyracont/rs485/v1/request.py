@@ -13,8 +13,8 @@ Classes:
 """
 
 from typing import Optional
+
 from pymodbus.pdu import ModbusPDU
-from pymodbus.datastore import ModbusDeviceContext
 
 from .emulation_utils import parse_command
 
@@ -25,9 +25,9 @@ class ThyracontRequest(ModbusPDU):
 
     A custom Modbus PDU class for Thyracont's RS485 protocol, designed to handle single-character
     commands (e.g., "M", "s") and associated data payloads (up to 6 bytes). It extends `ModbusPDU`
-    to support encoding, decoding, and asynchronous execution of requests against a Modbus slave
-    context, using `parse_command` from `emulation_utils` to process the request and generate a
-    response.
+    to support encoding, decoding, and asynchronous execution of requests against a mutable
+    register store, using `parse_command` from `emulation_utils` to process the request and
+    generate a response.
 
     Attributes
     ----------
@@ -45,18 +45,20 @@ class ThyracontRequest(ModbusPDU):
         The transaction ID, inherited from `ModbusPDU`.
     registers : list
         A list of response bytes, set after execution (not used in request encoding).
+    _store : Optional[list[int]]
+        The mutable register store the request operates on (None for client-side requests).
 
     Methods
     -------
-    __init__(command: Optional[str] = None, data: Optional[bytes] = None, slave=1, transaction=0)
-        -> None
-        Initializes the request with command, data, slave ID, and transaction ID.
+    __init__(command: Optional[str] = None, data: Optional[bytes] = None, dev_id=1,
+        transaction_id=0, store=None) -> None
+        Initializes the request with command, data, slave ID, transaction ID, and register store.
     encode() -> bytes
         Encodes the request data into bytes.
     decode(data: bytes) -> None
         Decodes a byte string into the request’s data attribute.
-    update_datastore(context: ModbusSlaveContext) -> ModbusPDU
-        Executes the request against a Modbus slave context and returns a response PDU.
+    datastore_update(context, device_id) -> ModbusPDU
+        Executes the request against the register store and returns a response PDU.
     """
 
     function_code = 0
@@ -68,6 +70,7 @@ class ThyracontRequest(ModbusPDU):
         data: Optional[bytes] = None,
         dev_id=1,
         transaction_id=0,
+        store: list[int] | None = None,
     ) -> None:
         """
         Initialize an ThyracontRequest instance.
@@ -88,8 +91,11 @@ class ThyracontRequest(ModbusPDU):
             The device (slave) ID. Defaults to 1.
         transaction_id : int, optional
             The transaction ID. Defaults to 0.
+        store : Optional[list[int]], optional
+            The mutable register store the request operates on. Defaults to None.
         """
         super().__init__(dev_id=dev_id, transaction_id=transaction_id)
+        self._store: list[int] | None = store
         self.command: str = ""
         if command is not None and len(command) > 0:
             self.command = command[0]
@@ -137,9 +143,9 @@ class ThyracontRequest(ModbusPDU):
         """
         self.data = data.decode()
 
-    async def update_datastore(self, context: ModbusDeviceContext) -> ModbusPDU:
+    async def datastore_update(self, context, device_id) -> ModbusPDU:
         """
-        Execute the request against a Modbus slave context and return a response PDU.
+        Execute the request against the register store and return a response PDU.
 
         Processes the request by calling `parse_command` with the command and data, then constructs
         a response `ThyracontRequest` instance with the resulting data. The response includes the
@@ -148,16 +154,28 @@ class ThyracontRequest(ModbusPDU):
 
         Parameters
         ----------
-        context : ModbusSlaveContext
-            The Modbus slave context containing the holding register store to update or read from.
+        context : object
+            The server context (ignored; state lives in `self._store`).
+        device_id : int
+            The device address (ignored; state lives in `self._store`).
 
         Returns
         -------
         ModbusPDU
             An `ThyracontRequest` instance representing the response, with `registers` set to the
             list of response bytes.
+
+        Raises
+        ------
+        RuntimeError
+            If the request was constructed without a register store (client-side requests).
         """
-        data: bytes = parse_command(context, self.command, self.data)
+        _ = context, device_id  # State lives in self._store, not the pymodbus datastore.
+        if self._store is None:
+            raise RuntimeError(
+                "ThyracontRequest has no register store; datastore_update requires store="
+            )
+        data: bytes = parse_command(self._store, self.command, self.data)
         response = ThyracontRequest(
             self.command,
             data,

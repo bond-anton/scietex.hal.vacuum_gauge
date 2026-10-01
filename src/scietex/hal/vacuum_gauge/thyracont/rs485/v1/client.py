@@ -21,6 +21,7 @@ from logging import Logger
 import serial
 from pymodbus.pdu import ModbusPDU
 
+from scietex.hal.serial import ModbusOperationError
 from scietex.hal.serial.config import (
     SerialConnectionConfigModel,
     ModbusSerialConnectionConfigModel,
@@ -37,7 +38,6 @@ from ..checksum import check_checksum
 from .framer import ThyracontASCIIFramer
 from .decoder import ThyracontDecodePDU
 from .request import ThyracontRequest
-
 
 # Determine the correct TimeoutError based on Python version
 if sys.version_info >= (3, 11):
@@ -200,7 +200,10 @@ class ThyracontVacuumGauge(RS485Client):
                 if response and hasattr(response, "data"):
                     self.logger.debug("Response: %s", response.data)
                     result = response.data
-            except TimeoutErrorAlias:
+            except (TimeoutErrorAlias, ModbusOperationError) as exc:
+                # scietex.hal.serial 2.x raises ModbusOperationError on bus/device
+                # failure; the gauge API contract is "None on failure".
+                self.logger.debug("Request failed: %s", exc)
                 result = None
         elif self.backend == "pyserial":
             custom_framer = ThyracontASCIIFramer(ThyracontDecodePDU(is_server=False))

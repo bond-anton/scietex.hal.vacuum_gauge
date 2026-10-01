@@ -2,10 +2,11 @@
 Thyracont RS485 Version 1 Emulation Utilities Module.
 
 This module provides utility functions for emulating a Thyracont vacuum gauge's RS485 communication
-protocol, specifically interacting with a Modbus slave context. It supports reading and writing
-32-bit values across pairs of 16-bit holding registers, converting pressure values to and from an
-encoded format, and parsing custom ASCII commands for the Thyracont MTM9D gauge. The module relies
-on external utilities for numeric splitting/combining and pressure encoding/decoding.
+protocol, specifically operating on a mutable sequence of 16-bit holding-register values. It
+supports reading and writing 32-bit values across pairs of 16-bit holding registers, converting
+pressure values to and from an encoded format, and parsing custom ASCII commands for the Thyracont
+MTM9D gauge. The module relies on external utilities for numeric splitting/combining and pressure
+encoding/decoding.
 
 Constants:
     REG_P (int): Register address for pressure value (32-bit, spans REG_P and REG_P+1).
@@ -21,23 +22,24 @@ Constants:
     REG_ZERO_SEL (int): Register address for zero adjustment flag (16-bit).
 
 Functions:
-    read_two_regs(context: ModbusSlaveContext, start_reg: int) -> int
+    read_two_regs(store: MutableSequence[int], start_reg: int) -> int
         Reads a 32-bit value from two consecutive 16-bit holding registers.
-    write_two_regs(context: ModbusSlaveContext, value: int, start_reg: int) -> None
+    write_two_regs(store: MutableSequence[int], value: int, start_reg: int) -> None
         Writes a 32-bit value to two consecutive 16-bit holding registers.
-    pressure_from_reg(context: ModbusSlaveContext, start_reg: int) -> float
+    pressure_from_reg(store: MutableSequence[int], start_reg: int) -> float
         Reads and decodes a pressure value from two registers.
-    pressure_to_reg(context: ModbusSlaveContext, p: float, start_reg: int) -> None
+    pressure_to_reg(store: MutableSequence[int], p: float, start_reg: int) -> None
         Encodes and writes a pressure value to two registers.
-    parse_command(context: ModbusSlaveContext, command: str, data: str) -> bytes
+    parse_command(store: MutableSequence[int], command: str, data: str) -> bytes
         Parses and executes Thyracont-specific ASCII commands, returning a response.
 """
 
+from collections.abc import MutableSequence
 from typing import Optional
-from pymodbus.datastore import ModbusDeviceContext
-from scietex.hal.serial.utilities.numeric import split_32bit, combine_32bit
-from .data import _pressure_encode, _pressure_decode
 
+from scietex.hal.serial.utilities.numeric import combine_32bit, split_32bit
+
+from .data import _pressure_decode, _pressure_encode
 
 REG_P = 0
 REG_SP1 = 2
@@ -52,17 +54,17 @@ REG_ATM_SEL = 12
 REG_ZERO_SEL = 13
 
 
-def read_two_regs(context: ModbusDeviceContext, start_reg: int) -> int:
+def read_two_regs(store: MutableSequence[int], start_reg: int) -> int:
     """
     Reads a 32-bit value from two consecutive 16-bit holding registers.
 
-    Combines two 16-bit values from the Modbus slave context's holding registers into a single
+    Combines two 16-bit values from the mutable register sequence into a single
     32-bit integer using the `combine_32bit` utility.
 
     Parameters
     ----------
-    context : ModbusSlaveContext
-        The Modbus slave context containing the holding register store.
+    store : MutableSequence[int]
+        A mutable sequence of holding-register values.
     start_reg : int
         The starting register address (e.g., 0 for REG_P).
 
@@ -71,33 +73,33 @@ def read_two_regs(context: ModbusDeviceContext, start_reg: int) -> int:
     int
         The 32-bit value combined from the two registers (`start_reg` and `start_reg + 1`).
     """
-    a = context.store["h"].values[start_reg]
-    b = context.store["h"].values[start_reg + 1]
+    a = store[start_reg]
+    b = store[start_reg + 1]
     return combine_32bit(a, b)
 
 
-def write_two_regs(context: ModbusDeviceContext, value: int, start_reg: int) -> None:
+def write_two_regs(store: MutableSequence[int], value: int, start_reg: int) -> None:
     """
     Writes a 32-bit value to two consecutive 16-bit holding registers.
 
     Splits a 32-bit integer into two 16-bit values using the `split_32bit` utility and writes them
-    to the Modbus slave context's holding registers.
+    to the mutable register sequence.
 
     Parameters
     ----------
-    context : ModbusSlaveContext
-        The Modbus slave context containing the holding register store.
+    store : MutableSequence[int]
+        A mutable sequence of holding-register values.
     value : int
         The 32-bit value to write.
     start_reg : int
         The starting register address (e.g., 0 for REG_P).
     """
     a, b = split_32bit(value)
-    context.store["h"].values[start_reg] = a
-    context.store["h"].values[start_reg + 1] = b
+    store[start_reg] = a
+    store[start_reg + 1] = b
 
 
-def pressure_from_reg(context: ModbusDeviceContext, start_reg: int) -> Optional[float]:
+def pressure_from_reg(store: MutableSequence[int], start_reg: int) -> Optional[float]:
     """
     Reads and decodes a pressure value from two registers.
 
@@ -106,8 +108,8 @@ def pressure_from_reg(context: ModbusDeviceContext, start_reg: int) -> Optional[
 
     Parameters
     ----------
-    context : ModbusSlaveContext
-        The Modbus slave context containing the holding register store.
+    store : MutableSequence[int]
+        A mutable sequence of holding-register values.
     start_reg : int
         The starting register address (e.g., 0 for REG_P).
 
@@ -116,11 +118,11 @@ def pressure_from_reg(context: ModbusDeviceContext, start_reg: int) -> Optional[
     float
         The decoded pressure value in millibars (mbar).
     """
-    p_encoded = read_two_regs(context, start_reg)
+    p_encoded = read_two_regs(store, start_reg)
     return _pressure_decode(f"{p_encoded:06d}")
 
 
-def pressure_to_reg(context: ModbusDeviceContext, p: float, start_reg: int) -> None:
+def pressure_to_reg(store: MutableSequence[int], p: float, start_reg: int) -> None:
     """
     Encodes and writes a pressure value to two registers.
 
@@ -130,31 +132,31 @@ def pressure_to_reg(context: ModbusDeviceContext, p: float, start_reg: int) -> N
 
     Parameters
     ----------
-    context : ModbusSlaveContext
-        The Modbus slave context containing the holding register store.
+    store : MutableSequence[int]
+        A mutable sequence of holding-register values.
     p : float
         The pressure value in millibars (mbar) to encode and write.
     start_reg : int
         The starting register address (e.g., 0 for REG_P).
     """
     p_encoded = int(_pressure_encode(p))
-    write_two_regs(context, p_encoded, start_reg)
+    write_two_regs(store, p_encoded, start_reg)
 
 
 # pylint: disable=too-many-branches,too-many-statements
-def parse_command(context: ModbusDeviceContext, command: str, data: str) -> bytes:
+def parse_command(store: MutableSequence[int], command: str, data: str) -> bytes:
     """
     Parses and executes Thyracont-specific ASCII commands, returning a response.
 
-    Interprets single-character commands and associated data to read from or write to the Modbus
-    slave context's holding registers, emulating the Thyracont MTM9D gauge's RS485 protocol.
+    Interprets single-character commands and associated data to read from or write to the mutable
+    sequence of holding-register values, emulating the Thyracont MTM9D gauge's RS485 protocol.
     Commands include reading pressure, setpoints, calibration values, and states, as well as
     writing new values or toggling adjustment flags.
 
     Parameters
     ----------
-    context : ModbusSlaveContext
-        The Modbus slave context containing the holding register store.
+    store : MutableSequence[int]
+        A mutable sequence of holding-register values.
     command : str
         A single-character command (e.g., "T", "M", "s") specifying the action.
     data : str
@@ -186,83 +188,83 @@ def parse_command(context: ModbusDeviceContext, command: str, data: str) -> byte
     if command == "T":
         response_data = b"MTM09D"
     elif command == "M":
-        p_encoded = read_two_regs(context, REG_P)
+        p_encoded = read_two_regs(store, REG_P)
         response_data = f"{p_encoded:06d}".encode()
     elif command == "m":
         try:
-            write_two_regs(context, int(data), REG_P)
+            write_two_regs(store, int(data), REG_P)
         except ValueError:
             pass
     elif command == "S":
         if data == "1":
-            p_encoded = read_two_regs(context, REG_SP1)
+            p_encoded = read_two_regs(store, REG_SP1)
         elif data == "2":
-            p_encoded = read_two_regs(context, REG_SP2)
+            p_encoded = read_two_regs(store, REG_SP2)
         else:
             p_encoded = None
         if p_encoded is not None:
             response_data = f"{p_encoded:06d}".encode()
     elif command == "s":
         if data == "1":
-            context.store["h"].values[REG_SP_SEL] = 1
+            store[REG_SP_SEL] = 1
         elif data == "2":
-            context.store["h"].values[REG_SP_SEL] = 2
+            store[REG_SP_SEL] = 2
         else:
-            if context.store["h"].values[REG_SP_SEL] == 1:
-                write_two_regs(context, int(data), REG_SP1)
-                context.store["h"].values[REG_SP_SEL] = 0
-            elif context.store["h"].values[REG_SP_SEL] == 2:
-                write_two_regs(context, int(data), REG_SP2)
-                context.store["h"].values[REG_SP_SEL] = 0
+            if store[REG_SP_SEL] == 1:
+                write_two_regs(store, int(data), REG_SP1)
+                store[REG_SP_SEL] = 0
+            elif store[REG_SP_SEL] == 2:
+                write_two_regs(store, int(data), REG_SP2)
+                store[REG_SP_SEL] = 0
     elif command == "C":
         if data == "1":
-            cal_encoded = context.store["h"].values[REG_CAL1]
+            cal_encoded = store[REG_CAL1]
         elif data == "2":
-            cal_encoded = context.store["h"].values[REG_CAL2]
+            cal_encoded = store[REG_CAL2]
         else:
             cal_encoded = None
         if cal_encoded is not None:
             response_data = f"{cal_encoded:06d}".encode()
     elif command == "c":
         if data == "1":
-            context.store["h"].values[REG_CAL_SEL] = 1
+            store[REG_CAL_SEL] = 1
         elif data == "2":
-            context.store["h"].values[REG_CAL_SEL] = 2
+            store[REG_CAL_SEL] = 2
         else:
-            if context.store["h"].values[REG_CAL_SEL] == 1:
-                write_two_regs(context, int(data), REG_CAL1)
-                context.store["h"].values[REG_CAL_SEL] = 0
-            elif context.store["h"].values[REG_CAL_SEL] == 2:
-                write_two_regs(context, int(data), REG_CAL2)
-                context.store["h"].values[REG_CAL_SEL] = 0
+            if store[REG_CAL_SEL] == 1:
+                write_two_regs(store, int(data), REG_CAL1)
+                store[REG_CAL_SEL] = 0
+            elif store[REG_CAL_SEL] == 2:
+                write_two_regs(store, int(data), REG_CAL2)
+                store[REG_CAL_SEL] = 0
     elif command == "I":
-        penning_state = context.store["h"].values[REG_PENNING_STATE]
+        penning_state = store[REG_PENNING_STATE]
         response_data = f"{penning_state:06d}".encode()
     elif command == "i":
-        context.store["h"].values[REG_PENNING_STATE] = int(data)
+        store[REG_PENNING_STATE] = int(data)
     elif command == "W":
-        penning_sync = context.store["h"].values[REG_PENNING_SYNC]
+        penning_sync = store[REG_PENNING_SYNC]
         response_data = f"{penning_sync:06d}".encode()
     elif command == "w":
-        context.store["h"].values[REG_PENNING_SYNC] = int(data)
+        store[REG_PENNING_SYNC] = int(data)
     elif command == "j":
         if data == "1":
-            context.store["h"].values[REG_ATM_SEL] = 1
-            context.store["h"].values[REG_ZERO_SEL] = 0
+            store[REG_ATM_SEL] = 1
+            store[REG_ZERO_SEL] = 0
         elif data == "0":
-            context.store["h"].values[REG_ZERO_SEL] = 1
-            context.store["h"].values[REG_ATM_SEL] = 0
+            store[REG_ZERO_SEL] = 1
+            store[REG_ATM_SEL] = 0
         else:
-            if context.store["h"].values[REG_ATM_SEL] == 1:
-                context.store["h"].values[REG_ATM_SEL] = 0
+            if store[REG_ATM_SEL] == 1:
+                store[REG_ATM_SEL] = 0
                 if data != "100023":
                     response_data = b""
                 else:
-                    write_two_regs(context, int(data), REG_P)
-            elif context.store["h"].values[REG_ZERO_SEL] == 1:
-                context.store["h"].values[REG_ZERO_SEL] = 0
+                    write_two_regs(store, int(data), REG_P)
+            elif store[REG_ZERO_SEL] == 1:
+                store[REG_ZERO_SEL] = 0
                 if data not in ("000000", "000020"):
                     response_data = b""
                 else:
-                    write_two_regs(context, int(data), REG_P)
+                    write_two_regs(store, int(data), REG_P)
     return response_data
