@@ -13,6 +13,8 @@ Classes:
         methods to read and write gauge data.
     ThyracontEmulator: An RS485 server emulator for simulating a Thyracont vacuum gauge, with
         properties to manage simulated data.
+    ThyracontV1Translator: A `GatewayTranslator` mapping standard Modbus requests to and from the
+        V1 vendor protocol.
 
 Modules:
     client: Implements the `ThyracontVacuumGauge` class for real gauge communication.
@@ -22,9 +24,11 @@ Modules:
     emulation_utils: Contains utilities for managing Modbus registers in the emulator.
     framer: Implements a custom ASCII framer for the Thyracont protocol.
     request: Defines a custom Modbus PDU for Thyracont requests.
+    translator: Implements the `ThyracontV1Translator` gateway plugin.
 """
 
 from .client import ThyracontVacuumGauge
 from .emulation import ThyracontEmulator
+from .translator import ThyracontV1Translator
 
-__all__ = ["ThyracontVacuumGauge", "ThyracontEmulator"]
+__all__ = ["ThyracontVacuumGauge", "ThyracontEmulator", "ThyracontV1Translator"]
