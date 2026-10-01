@@ -12,10 +12,16 @@ Classes:
         into `ThyracontRequest` objects.
 """
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pymodbus import ModbusException
 from pymodbus.pdu import DecodePDU, ModbusPDU
+
+if TYPE_CHECKING:
+    # Imported under TYPE_CHECKING only: the base decoder must not import the v2 subpackage at
+    # runtime, or the v1 -> base -> v2.__init__ -> v2.client -> v2.decoder -> base import cycle
+    # would break collection.
+    from .v2.emulation_utils import ThyracontV2State
 
 
 class ThyracontRS485DecodePDU(DecodePDU):
@@ -39,18 +45,27 @@ class ThyracontRS485DecodePDU(DecodePDU):
         Indicates whether the decoder is used in server mode (inherited from `DecodePDU`).
     store : Optional[list[int]]
         A mutable list of holding-register values injected into decoded PDUs. None for clients.
+    state : Optional[ThyracontV2State]
+        The emulated V2 device state injected into decoded V2 PDUs. None for clients.
 
     Methods
     -------
-    __init__(is_server: bool = False, store: Optional[list[int]] = None) -> None
-        Initializes the decoder with an empty lookup table and an optional register store.
+    __init__(is_server: bool = False, store: Optional[list[int]] = None,
+             state: Optional[ThyracontV2State] = None) -> None
+        Initializes the decoder with an empty lookup table, an optional register store, and an
+        optional V2 emulated device state.
     lookupPduClass(data: bytes) -> Optional[type[ModbusPDU]]
         Retrieves the PDU class for decoding (always `ThyracontRequest` or None).
     decode(frame: bytes) -> Optional[ModbusPDU]
         Decodes a Thyracont frame into an `ThyracontRequest` instance.
     """
 
-    def __init__(self, is_server: bool = False, store: list[int] | None = None) -> None:
+    def __init__(
+        self,
+        is_server: bool = False,
+        store: list[int] | None = None,
+        state: "ThyracontV2State | None" = None,
+    ) -> None:
         """
         Initialize an ThyracontDecodePDU instance.
 
@@ -63,10 +78,14 @@ class ThyracontRS485DecodePDU(DecodePDU):
         is_server : bool, optional
             Whether the decoder is used in server mode. Defaults to False (client mode).
         store : Optional[list[int]], optional
-            A mutable list of holding-register values injected into decoded PDUs. Defaults to None.
+            A mutable list of holding-register values injected into decoded V1 PDUs. Defaults to
+            None.
+        state : Optional[ThyracontV2State], optional
+            The emulated V2 device state injected into decoded V2 PDUs. Defaults to None.
         """
         super().__init__(is_server)
         self.store: list[int] | None = store
+        self.state: "ThyracontV2State | None" = state
         self.pdu_table: dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]] = {}
         self.pdu_sub_table: dict[int, dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]]] = {}
 

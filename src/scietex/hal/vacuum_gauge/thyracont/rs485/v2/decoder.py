@@ -59,10 +59,7 @@ class ThyracontDecodePDU(ThyracontRS485DecodePDU):
         if not frame:
             return None
         try:
-            access_code_int: int = int(chr(frame[0]))
-            if access_code_int not in (6, 7):
-                access_code_int -= 1
-            access_code: AccessCode = AccessCode.from_int(access_code_int)
+            access_code: AccessCode = AccessCode.from_int(int(chr(frame[0])))
             command: str = frame[1:3].decode()
             pdu_class = self.lookupPduClass(frame)
             if pdu_class is None:
@@ -71,6 +68,7 @@ class ThyracontDecodePDU(ThyracontRS485DecodePDU):
                 access_code=access_code,  # type: ignore[call-arg]
                 command=command,  # type: ignore[call-arg]
                 data=frame,  # type: ignore[call-arg]
+                state=self.state,  # type: ignore[call-arg]
             )
             pdu.decode(frame)
             pdu.registers = list(frame)[3:]
