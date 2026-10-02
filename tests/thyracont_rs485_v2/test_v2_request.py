@@ -119,7 +119,7 @@ async def test_datastore_update_read_pressure(state):
     response = await request.datastore_update(None, 1)
     assert isinstance(response, ThyracontRequest)
     assert response.command == "MV"
-    assert response.function_code == 6  # AccessCode.STREAMING
+    assert response.function_code == AccessCode.READ_RESPONSE.value
     assert response.data == "1.000e3"
     assert response.registers == list("1.000e3".encode())
     assert response.dev_id == 2
@@ -135,7 +135,7 @@ async def test_datastore_update_model(state):
     )
     response = await request.datastore_update(None, 1)
     assert response.command == "TD"
-    assert response.function_code == 6
+    assert response.function_code == AccessCode.READ_RESPONSE.value
     assert response.data == "MTM9D"
     assert response.registers == list("MTM9D".encode())
 
@@ -160,6 +160,46 @@ async def test_datastore_update_without_state():
     request = ThyracontRequest(access_code=AccessCode.READ, command="MV")
     with pytest.raises(RuntimeError):
         await request.datastore_update(None, 1)
+
+
+# Tests for access-code response mapping
+def test_response_for_maps_send_codes():
+    """Each send access code maps to its spec-defined success response code."""
+    assert AccessCode.response_for(AccessCode.READ.value) is AccessCode.READ_RESPONSE
+    assert AccessCode.response_for(AccessCode.WRITE.value) is AccessCode.WRITE_RESPONSE
+    assert (
+        AccessCode.response_for(AccessCode.FACTORY_DEFAULT.value)
+        is AccessCode.FACTORY_DEFAULT_RESPONSE
+    )
+    assert AccessCode.response_for(AccessCode.BINARY.value) is AccessCode.BINARY_RESPONSE
+
+
+def test_response_for_rejects_unknown_code():
+    """An access code with no defined success response raises ValueError."""
+    with pytest.raises(ValueError):
+        AccessCode.response_for(AccessCode.STREAMING.value)
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_datastore_update_write_response_code(state):
+    """A write request is answered with the write-response access code (3)."""
+    request = ThyracontRequest(
+        access_code=AccessCode.WRITE, command="MV", data=b"1.000e3", state=state
+    )
+    response = await request.datastore_update(None, 1)
+    assert response.function_code == AccessCode.WRITE_RESPONSE.value
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_datastore_update_factory_default_response_code(state):
+    """A factory-default request is answered with access code 5."""
+    request = ThyracontRequest(
+        access_code=AccessCode.FACTORY_DEFAULT, command="PM", data=b"1", state=state
+    )
+    response = await request.datastore_update(None, 1)
+    assert response.function_code == AccessCode.FACTORY_DEFAULT_RESPONSE.value
 
 
 if __name__ == "__main__":

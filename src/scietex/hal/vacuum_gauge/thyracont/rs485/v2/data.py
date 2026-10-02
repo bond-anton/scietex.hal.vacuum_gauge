@@ -7,16 +7,29 @@ from enum import Enum
 
 
 class AccessCode(Enum):
-    """Access codes for RS485 V2 protocol."""
+    """Access codes for RS485 V2 protocol.
+
+    The protocol uses distinct codes for send (master -> transmitter) and
+    receive (transmitter -> master) sequences. On success the transmitter
+    increments the send code by one: a read sent with ``READ`` (0) is answered
+    with ``READ_RESPONSE`` (1), a write sent with ``WRITE`` (2) with
+    ``WRITE_RESPONSE`` (3), and a factory-default sent with ``FACTORY_DEFAULT``
+    (4) with ``FACTORY_DEFAULT_RESPONSE`` (5). ``STREAMING`` (6) is reserved
+    for streaming-mode responses, and ``ERROR`` (7) for any error.
+    """
 
     # Access Codes for Send Sequences (Master->Transmitter).
     READ = 0
     WRITE = 2
     FACTORY_DEFAULT = 4
     BINARY = 8
-    # Special Access Codes for Receive Sequences (Transmitter->Master).
+    # Access Codes for Receive Sequences (Transmitter->Master).
+    READ_RESPONSE = 1
+    WRITE_RESPONSE = 3
+    FACTORY_DEFAULT_RESPONSE = 5
     STREAMING = 6
     ERROR = 7
+    BINARY_RESPONSE = 9
 
     @classmethod
     def from_int(cls, value: int) -> "AccessCode":
@@ -38,6 +51,33 @@ class AccessCode(Enum):
         raise ValueError(
             f"Unknown access code: {value}. Supported values are: {[m.value for m in cls]}"
         )
+
+    @classmethod
+    def response_for(cls, request_code: int) -> "AccessCode":
+        """
+        Map a send access code to the matching success response access code.
+
+        Args:
+            request_code (int): The send access code (e.g. ``AccessCode.READ.value``).
+
+        Returns:
+            AccessCode: The response code the transmitter uses on success.
+
+        Raises:
+            ValueError: If the request code has no defined success response.
+        """
+        responses: dict[int, AccessCode] = {
+            cls.READ.value: cls.READ_RESPONSE,
+            cls.WRITE.value: cls.WRITE_RESPONSE,
+            cls.FACTORY_DEFAULT.value: cls.FACTORY_DEFAULT_RESPONSE,
+            cls.BINARY.value: cls.BINARY_RESPONSE,
+        }
+        try:
+            return responses[request_code]
+        except KeyError as exc:
+            raise ValueError(
+                f"No success response defined for access code: {request_code}"
+            ) from exc
 
 
 class ErrorMessage(Enum):

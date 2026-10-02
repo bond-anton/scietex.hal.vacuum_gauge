@@ -92,7 +92,7 @@ def test_decode_unknown_access_code():
     """Test decoding a frame with an unsupported access code returns None."""
     decoder = ThyracontDecodePDU()
     decoder.pdu_table[0] = (ThyracontRequest, ThyracontRequest)
-    assert decoder.decode(b"5MV00") is None  # 5 is not a valid AccessCode
+    assert decoder.decode(b"XMV00") is None  # "X" is not a valid AccessCode
 
 
 # pylint: disable=protected-access

@@ -200,6 +200,32 @@ def test_parse_command_write_calibration(store):
 
 
 # pylint: disable=redefined-outer-name
+def test_parse_command_write_cal1_does_not_clobber_cal2(store):
+    """Writing CAL1 must not overwrite CAL2 or the Penning-state register."""
+    store[REG_CAL1] = 111
+    store[REG_CAL2] = 222
+    store[REG_PENNING_STATE] = 333
+    store[REG_CAL_SEL] = 1
+    parse_command(store, "c", "123")
+    assert store[REG_CAL1] == 123
+    assert store[REG_CAL2] == 222  # Unchanged
+    assert store[REG_PENNING_STATE] == 333  # Unchanged
+
+
+# pylint: disable=redefined-outer-name
+def test_parse_command_write_cal2_does_not_clobber_penning(store):
+    """Writing CAL2 must not overwrite the Penning-state register."""
+    store[REG_CAL1] = 111
+    store[REG_CAL2] = 222
+    store[REG_PENNING_STATE] = 333
+    store[REG_CAL_SEL] = 2
+    parse_command(store, "c", "99")
+    assert store[REG_CAL1] == 111  # Unchanged
+    assert store[REG_CAL2] == 99
+    assert store[REG_PENNING_STATE] == 333  # Unchanged
+
+
+# pylint: disable=redefined-outer-name
 def test_parse_command_read_penning_state(store):
     """Test parsing the 'I' command (read Penning state)."""
     store[REG_PENNING_STATE] = 1

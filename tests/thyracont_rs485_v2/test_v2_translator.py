@@ -35,8 +35,8 @@ def _registers_to_float(registers: list[int]) -> float:
 
 
 def _vendor_response(data: str) -> ThyracontRequest:
-    """Build a fake successful (STREAMING) vendor response for the given data."""
-    return ThyracontRequest(access_code=AccessCode.STREAMING, command="MV", data=data.encode())
+    """Build a fake successful (read-response) vendor response for the given data."""
+    return ThyracontRequest(access_code=AccessCode.READ_RESPONSE, command="MV", data=data.encode())
 
 
 # Tests for to_vendor

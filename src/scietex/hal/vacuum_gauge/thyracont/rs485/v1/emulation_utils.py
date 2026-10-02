@@ -232,10 +232,10 @@ def parse_command(store: MutableSequence[int], command: str, data: str) -> bytes
             store[REG_CAL_SEL] = 2
         else:
             if store[REG_CAL_SEL] == 1:
-                write_two_regs(store, int(data), REG_CAL1)
+                store[REG_CAL1] = int(data)
                 store[REG_CAL_SEL] = 0
             elif store[REG_CAL_SEL] == 2:
-                write_two_regs(store, int(data), REG_CAL2)
+                store[REG_CAL2] = int(data)
                 store[REG_CAL_SEL] = 0
     elif command == "I":
         penning_state = store[REG_PENNING_STATE]

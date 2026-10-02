@@ -164,9 +164,10 @@ class ThyracontRequest(ModbusPDU):
         Execute the request against the emulated state and return a response PDU.
 
         Processes the request by calling `parse_command` with the command and data, then constructs
-        a response `ThyracontRequest` instance. On success the response uses
-        `AccessCode.STREAMING`; on a parse error it uses `AccessCode.ERROR` with the error string
-        as data. The response bytes are stored in the `registers` attribute as a list.
+        a response `ThyracontRequest` instance. On success the response access code is the
+        transmitter's success code for the request's access code (read -> 1, write -> 3,
+        factory default -> 5, binary -> 9); on a parse error it uses `AccessCode.ERROR` with the
+        error string as data. The response bytes are stored in the `registers` attribute as a list.
 
         Parameters
         ----------
@@ -192,7 +193,7 @@ class ThyracontRequest(ModbusPDU):
             raise RuntimeError("ThyracontRequest has no state; datastore_update requires state=")
         try:
             data: str = parse_command(state, self.command, self.data)
-            access_code: AccessCode = AccessCode.STREAMING
+            access_code: AccessCode = AccessCode.response_for(self.function_code)
         except ValueError as exc:
             data = str(exc)
             access_code = AccessCode.ERROR
