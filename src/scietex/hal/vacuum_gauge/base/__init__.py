@@ -12,14 +12,22 @@ Classes:
     ExponentialVacuumGauge: An abstract base class for vacuum gauges with exponential output.
     InterpolationVacuumGauge: A class for vacuum gauges using linear interpolation based on
         calibration data.
+    VacuumGaugeProtocol: The transport-agnostic contract every gauge driver implements.
 
 Modules:
     atmosphere: Defines the `Atmosphere` enumeration for gas type handling.
     analog: Contains the core vacuum gauge classes `ExponentialVacuumGauge` and
         `InterpolationVacuumGauge`.
+    protocol: Defines the `VacuumGaugeProtocol` driver contract.
 """
 
 from .atmosphere import Atmosphere
 from .analog import ExponentialVacuumGauge, InterpolationVacuumGauge
+from .protocol import VacuumGaugeProtocol
 
-__all__ = ["Atmosphere", "ExponentialVacuumGauge", "InterpolationVacuumGauge"]
+__all__ = [
+    "Atmosphere",
+    "ExponentialVacuumGauge",
+    "InterpolationVacuumGauge",
+    "VacuumGaugeProtocol",
+]
