@@ -56,14 +56,15 @@ except ModuleNotFoundError:
 class _StubClient:
     """Stand-in for `AsyncModbusTcpClient` that records calls."""
 
-    def __init__(self, responses=None):
+    def __init__(self, responses=None, connect_result=True):
         self.responses = list(responses or [])
         self.calls = []
         self.closed = False
+        self.connect_result = connect_result
 
     async def connect(self):
-        """Pretend to connect."""
-        return True
+        """Pretend to connect, reporting the configured result."""
+        return self.connect_result
 
     def close(self):
         """Record the close."""
@@ -223,6 +224,30 @@ def test_v1_requires_connect():
     gauge = ThyracontModbusV1Gauge("127.0.0.1")
     with pytest.raises(RuntimeError):
         asyncio.run(gauge.measure())
+
+
+def test_v1_connect_raises_when_gateway_unreachable(monkeypatch):
+    """A failed connect raises instead of leaving the gauge looking connected."""
+    stub = _StubClient(connect_result=False)
+    monkeypatch.setattr(
+        "scietex.hal.vacuum_gauge.thyracont.modbus.v1.client.AsyncModbusTcpClient",
+        lambda *args, **kwargs: stub,
+    )
+    gauge = ThyracontModbusV1Gauge("127.0.0.1")
+    with pytest.raises(ModbusOperationError):
+        asyncio.run(gauge.connect())
+
+
+def test_v2_connect_raises_when_gateway_unreachable(monkeypatch):
+    """A failed connect raises instead of leaving the gauge looking connected."""
+    stub = _StubClient(connect_result=False)
+    monkeypatch.setattr(
+        "scietex.hal.vacuum_gauge.thyracont.modbus.v2.client.AsyncModbusTcpClient",
+        lambda *args, **kwargs: stub,
+    )
+    gauge = ThyracontModbusV2Gauge("127.0.0.1")
+    with pytest.raises(ModbusOperationError):
+        asyncio.run(gauge.connect())
 
 
 # -- V2 client --------------------------------------------------------------

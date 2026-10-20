@@ -112,12 +112,25 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
         self._client: Optional[AsyncModbusTcpClient] = None
 
     async def connect(self) -> None:
-        """Open the TCP connection to the gateway."""
+        """
+        Open the TCP connection to the gateway.
+
+        Raises:
+            ModbusOperationError: If the gateway is unreachable. pymodbus
+                reports a failed connect by returning ``False`` rather than
+                raising, so the result is checked here; otherwise a caller
+                would treat an unreachable gauge as connected and only fail
+                later, on the first read.
+        """
         if self._client is None:
             self._client = AsyncModbusTcpClient(
                 self._host, port=self._port, timeout=self._timeout
             )
-        await self._client.connect()
+        if not await self._client.connect():
+            raise ModbusOperationError(
+                f"Failed to connect to vacuum gauge gateway at "
+                f"{self._host}:{self._port}"
+            )
 
     async def close(self) -> None:
         """Close the TCP connection to the gateway."""
