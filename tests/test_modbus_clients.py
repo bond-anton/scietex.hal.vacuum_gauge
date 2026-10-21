@@ -21,6 +21,9 @@ from pymodbus.pdu.register_message import (
 from scietex.hal.serial import ModbusOperationError
 from scietex.hal.serial.utilities.numeric import ByteOrder, split_32bit
 
+# The fallback branch imports the installed package while the primary branch
+# imports from src/, so pylint cannot group them.
+# pylint: disable=ungrouped-imports
 try:
     from src.scietex.hal.vacuum_gauge.base.protocol import VacuumGaugeProtocol
     from src.scietex.hal.vacuum_gauge.erstevak.modbus.v1.client import (
