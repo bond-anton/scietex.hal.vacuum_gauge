@@ -10,7 +10,6 @@ import logging
 import socket
 
 import pytest
-
 from scietex.hal.serial import VirtualSerialPair
 from scietex.hal.serial.config import ModbusSerialConnectionConfig
 

@@ -50,14 +50,12 @@ the IEEE-754 float32 bit pattern the register map requires.
 """
 
 import struct
-from typing import Optional
 
 from pymodbus.pdu import ModbusPDU
 from pymodbus.pdu.register_message import (
     ReadHoldingRegistersRequest,
     ReadHoldingRegistersResponse,
 )
-
 from scietex.hal.serial.gateway import GatewayError
 from scietex.hal.serial.utilities.numeric import ByteOrder, split_32bit
 
@@ -68,7 +66,7 @@ from .request import ThyracontRequest
 _FLOAT32_REGISTERS = 2
 
 # Vendor command (and optional data) for each supported gateway register address.
-_COMMAND: dict[int, tuple[str, Optional[bytes]]] = {
+_COMMAND: dict[int, tuple[str, bytes | None]] = {
     0: ("MV", None),  # Pressure.
     2: ("OH", None),  # Gauge operating hours.
     4: ("OH", None),  # Cathode operating hours.
@@ -95,7 +93,7 @@ class ThyracontV2Translator:
     """
 
     def __init__(self) -> None:
-        self._pending_address: Optional[int] = None
+        self._pending_address: int | None = None
 
     def to_vendor(self, request: ModbusPDU) -> ModbusPDU:
         """
@@ -153,7 +151,7 @@ class ThyracontV2Translator:
 
     def _decode(self, address: int, data: str) -> float:
         """Decode a vendor response string for the given address into a float."""
-        value: Optional[float]
+        value: float | None
         if address in (0, 1):
             value = decode_float(data)
         elif address in (2, 3):
@@ -171,7 +169,7 @@ class ThyracontV2Translator:
         return value
 
     @staticmethod
-    def _decode_operating_hours(data: str, field: str) -> Optional[float]:
+    def _decode_operating_hours(data: str, field: str) -> float | None:
         """Extract one field from an operating-hours response string."""
         decoded = decode_operating_hours(data)
         if decoded is None:
@@ -179,7 +177,7 @@ class ThyracontV2Translator:
         return decoded.get(field)
 
     @staticmethod
-    def _decode_wear(data: str, field: str) -> Optional[float]:
+    def _decode_wear(data: str, field: str) -> float | None:
         """Extract one numeric field from a wear-status response string."""
         decoded = decode_wear_status(data)
         if decoded is None:

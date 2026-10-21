@@ -21,8 +21,8 @@ Modules:
     protocol: Defines the `VacuumGaugeProtocol` driver contract.
 """
 
-from .atmosphere import Atmosphere
 from .analog import ExponentialVacuumGauge, InterpolationVacuumGauge
+from .atmosphere import Atmosphere
 from .protocol import VacuumGaugeProtocol
 
 __all__ = [

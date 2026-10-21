@@ -6,16 +6,16 @@ voltage-to-pressure conversion with model-specific exponential formulas, and atm
 correction behavior (fixed for MTP4D, pressure-dependent for MTM9D).
 """
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_almost_equal
 
 try:
-    from src.scietex.hal.vacuum_gauge.erstevak import MTP4DGauge, MTM9DGauge
     from src.scietex.hal.vacuum_gauge.base.atmosphere import Atmosphere
+    from src.scietex.hal.vacuum_gauge.erstevak import MTM9DGauge, MTP4DGauge
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.erstevak import MTP4DGauge, MTM9DGauge
     from scietex.hal.vacuum_gauge.base.atmosphere import Atmosphere
+    from scietex.hal.vacuum_gauge.erstevak import MTM9DGauge, MTP4DGauge
 
 
 # Tests for MTP4DGauge
@@ -172,9 +172,9 @@ def test_erstevak_atmosphere_factor_coverage():
     for gauge_class in [MTP4DGauge, MTM9DGauge]:
         gauge = gauge_class()
         for atm in Atmosphere:
-            assert (
-                atm in gauge.atmosphere_factor
-            ), f"No factor for {atm.value} in {gauge.model_name}"
+            assert atm in gauge.atmosphere_factor, (
+                f"No factor for {atm.value} in {gauge.model_name}"
+            )
             assert isinstance(gauge.atmosphere_factor[atm], float)
         if gauge_class == MTM9DGauge:
             for atm in Atmosphere:

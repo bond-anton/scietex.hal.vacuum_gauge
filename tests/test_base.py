@@ -6,16 +6,22 @@ as well as the Atmosphere enum from atmosphere.py, ensuring correct initializati
 voltage-to-pressure conversion, and atmospheric gas handling.
 """
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_almost_equal
 
 try:
-    from src.scietex.hal.vacuum_gauge.base import ExponentialVacuumGauge, InterpolationVacuumGauge
-    from src.scietex.hal.vacuum_gauge.base import Atmosphere
+    from src.scietex.hal.vacuum_gauge.base import (
+        Atmosphere,
+        ExponentialVacuumGauge,
+        InterpolationVacuumGauge,
+    )
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.base import ExponentialVacuumGauge, InterpolationVacuumGauge
-    from scietex.hal.vacuum_gauge.base import Atmosphere
+    from scietex.hal.vacuum_gauge.base import (
+        Atmosphere,
+        ExponentialVacuumGauge,
+        InterpolationVacuumGauge,
+    )
 
 
 # Tests for Atmosphere enum (unchanged from previous version)

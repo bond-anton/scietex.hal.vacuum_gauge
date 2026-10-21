@@ -14,7 +14,6 @@ Functions:
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .data import encode_float
 
@@ -55,7 +54,7 @@ class ThyracontV2State:
 
     pressure: float = 1000.0
     gauge_hours: float = 0.0
-    cathode_hours: Optional[float] = None
+    cathode_hours: float | None = None
     wear: float = 0.0
     hours_since_zero_adjustment: float = 0.0
     model: str = "MTM9D"

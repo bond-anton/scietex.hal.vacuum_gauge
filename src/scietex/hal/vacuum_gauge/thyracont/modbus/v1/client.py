@@ -26,11 +26,9 @@ Classes:
 """
 
 from logging import Logger
-from typing import Optional
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.pdu import ExceptionResponse
-
 from scietex.hal.serial import ModbusOperationError
 from scietex.hal.serial.utilities.numeric import combine_32bit, split_32bit
 
@@ -51,7 +49,7 @@ _REG_CALIBRATION_SELECT = 12
 _REG_CALIBRATION_VALUE = 13
 
 
-def _decode_pressure(raw: int) -> Optional[float]:
+def _decode_pressure(raw: int) -> float | None:
     """
     Decode a six-digit vendor pressure value into millibars.
 
@@ -119,7 +117,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
         unit_id: int = 1,
         label: str = "Thyracont Gauge",
         timeout: float = 1.0,
-        logger: Optional[Logger] = None,
+        logger: Logger | None = None,
     ) -> None:
         """
         Initialize the client.
@@ -141,7 +139,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
         # `AsyncModbusTcpClient` binds to the running event loop in its
         # constructor, so it cannot be built here: the client is created in
         # `connect()`, which always runs inside the loop.
-        self._client: Optional[AsyncModbusTcpClient] = None
+        self._client: AsyncModbusTcpClient | None = None
 
     async def connect(self) -> None:
         """
@@ -155,13 +153,10 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
                 later, on the first read.
         """
         if self._client is None:
-            self._client = AsyncModbusTcpClient(
-                self._host, port=self._port, timeout=self._timeout
-            )
+            self._client = AsyncModbusTcpClient(self._host, port=self._port, timeout=self._timeout)
         if not await self._client.connect():
             raise ModbusOperationError(
-                f"Failed to connect to vacuum gauge gateway at "
-                f"{self._host}:{self._port}"
+                f"Failed to connect to vacuum gauge gateway at {self._host}:{self._port}"
             )
 
     async def close(self) -> None:
@@ -242,7 +237,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
                 f"Write of registers {address} failed: exception code {response.exception_code}"
             )
 
-    async def measure(self) -> Optional[float]:
+    async def measure(self) -> float | None:
         """
         Read the current pressure.
 
@@ -278,7 +273,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
         raw = _encode_pressure(pressure)
         await self._write_registers(_REG_PRESSURE, list(split_32bit(raw)))
 
-    async def get_setpoint(self, index: int = 1) -> Optional[float]:
+    async def get_setpoint(self, index: int = 1) -> float | None:
         """
         Read a setpoint.
 
@@ -308,7 +303,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
         raw = _encode_pressure(pressure)
         await self._write_registers(_REG_SETPOINT_VALUE, list(split_32bit(raw)))
 
-    async def get_calibration(self, index: int = 1) -> Optional[float]:
+    async def get_calibration(self, index: int = 1) -> float | None:
         """
         Read a calibration coefficient.
 
@@ -331,9 +326,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
             value: The calibration coefficient.
         """
         await self._write_register(_REG_CALIBRATION_SELECT, index)
-        await self._write_registers(
-            _REG_CALIBRATION_VALUE, list(split_32bit(int(value)))
-        )
+        await self._write_registers(_REG_CALIBRATION_VALUE, list(split_32bit(int(value))))
 
     async def get_penning_state(self) -> bool:
         """

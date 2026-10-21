@@ -17,7 +17,6 @@ from pymodbus.pdu.register_message import (
     WriteMultipleRegistersResponse,
     WriteSingleRegisterResponse,
 )
-
 from scietex.hal.serial import ModbusOperationError
 from scietex.hal.serial.utilities.numeric import ByteOrder, split_32bit
 
@@ -269,9 +268,7 @@ def test_v2_measure_decodes_pressure():
     raw = struct.pack(">f", 2.5)
     word = struct.unpack(">I", raw)[0]
     registers = list(split_32bit(word, ByteOrder.BIG_ENDIAN))
-    gauge = _attach(
-        ThyracontModbusV2Gauge("127.0.0.1"), _StubClient([_read_response(registers)])
-    )
+    gauge = _attach(ThyracontModbusV2Gauge("127.0.0.1"), _StubClient([_read_response(registers)]))
     assert asyncio.run(gauge.measure()) == pytest.approx(2.5)
 
 

@@ -1,10 +1,9 @@
 """Example of Erstevak gauge usage over RS485 protocol."""
 
 # pylint: disable=duplicate-code
-from typing import Optional
 import asyncio
-import time
 import logging
+import time
 
 from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 
@@ -13,7 +12,7 @@ from scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakVacuumGaug
 
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-statements
-async def main(address: int, client_con: Config, logger: Optional[logging.Logger] = None):
+async def main(address: int, client_con: Config, logger: logging.Logger | None = None):
     """Main coroutine"""
 
     gauge = ErstevakVacuumGauge(

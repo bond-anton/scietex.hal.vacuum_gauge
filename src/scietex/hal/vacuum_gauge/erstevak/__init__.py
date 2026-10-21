@@ -15,6 +15,6 @@ Modules:
     analog: Contains the implementation of the Erstevak MTP4D and MTM9D gauge classes.
 """
 
-from .analog import MTP4DGauge, MTM9DGauge
+from .analog import MTM9DGauge, MTP4DGauge
 
 __all__ = ["MTP4DGauge", "MTM9DGauge"]

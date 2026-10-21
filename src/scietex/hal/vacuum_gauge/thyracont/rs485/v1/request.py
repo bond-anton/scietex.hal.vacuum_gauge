@@ -12,8 +12,6 @@ Classes:
         execution and response generation.
 """
 
-from typing import Optional
-
 from pymodbus.pdu import ModbusPDU
 
 from .emulation_utils import parse_command
@@ -66,8 +64,8 @@ class ThyracontRequest(ModbusPDU):
 
     def __init__(
         self,
-        command: Optional[str] = None,
-        data: Optional[bytes] = None,
+        command: str | None = None,
+        data: bytes | None = None,
         dev_id=1,
         transaction_id=0,
         store: list[int] | None = None,

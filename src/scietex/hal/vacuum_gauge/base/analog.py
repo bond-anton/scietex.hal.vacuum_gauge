@@ -20,11 +20,10 @@ Key Features:
     - Offers both exponential and interpolation-based conversion methods.
 """
 
-from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
-
 from scietex.hal.analog_sensor import AnalogSensorInterface, LinearInterpolatorSensor
+
 from .atmosphere import Atmosphere
 
 
@@ -82,7 +81,7 @@ class ExponentialVacuumGauge(AnalogSensorInterface):
         v_max: float = 10.0,
         p_min: float = 5e-5,
         p_max: float = 1.5e3,
-        atmosphere: Optional[str | Atmosphere] = None,
+        atmosphere: str | Atmosphere | None = None,
     ):
         """
         Initializes the ExponentialVacuumGauge instance.
@@ -205,8 +204,8 @@ class InterpolationVacuumGauge(LinearInterpolatorSensor):
         v_max: float = 10.0,
         p_min: float = 1e-6,
         p_max: float = 1000.0,
-        atmosphere: Optional[str | Atmosphere] = None,
-        extrapolate: Optional[bool] = None,
+        atmosphere: str | Atmosphere | None = None,
+        extrapolate: bool | None = None,
     ):
         """
         Initializes the InterpolationVacuumGauge instance.

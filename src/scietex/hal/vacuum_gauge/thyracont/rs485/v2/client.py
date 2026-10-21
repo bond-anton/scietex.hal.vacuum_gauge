@@ -13,47 +13,46 @@ Classes:
         to read and write gauge data.
 """
 
-from typing import Optional, Callable
-import sys
 import asyncio
+import sys
+from collections.abc import Callable
 from functools import wraps
 from logging import Logger
 
 import serial
 from pymodbus.pdu import ModbusPDU
-
 from scietex.hal.serial import ModbusOperationError
-from scietex.hal.serial.config import (
-    SerialConnectionConfigModel,
-    ModbusSerialConnectionConfigModel,
-)
 from scietex.hal.serial.client import RS485Client
+from scietex.hal.serial.config import (
+    ModbusSerialConnectionConfigModel,
+    SerialConnectionConfigModel,
+)
 
+from ..checksum import check_checksum
 from .data import (
     AccessCode,
-    ErrorMessage,
-    Sensor,
+    CathodeControlMode,
     DisplayOrientation,
     DisplayUnits,
-    CathodeControlMode,
+    ErrorMessage,
+    Sensor,
     StreamingMode,
-    encode_float_1,
-    encode_float,
+    adjust_baudrate,
     decode_float,
+    decode_operating_hours,
+    decode_output_characteristic,
     decode_range,
     decode_relay_data,
-    encode_relay_data,
     decode_sensor_transition,
-    encode_sensor_transition,
-    decode_output_characteristic,
-    encode_tab_output_characteristic,
-    decode_operating_hours,
     decode_wear_status,
-    adjust_baudrate,
+    encode_float,
+    encode_float_1,
+    encode_relay_data,
+    encode_sensor_transition,
+    encode_tab_output_characteristic,
 )
-from ..checksum import check_checksum
-from .framer import ThyracontASCIIFramer
 from .decoder import ThyracontDecodePDU
+from .framer import ThyracontASCIIFramer
 from .request import ThyracontRequest
 
 # Determine the correct TimeoutError based on Python version
@@ -70,7 +69,7 @@ def check_success(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(*args, **kwargs) -> bool:
         """Check if no error is returned."""
-        failed: Optional[str] = await func(*args, **kwargs)
+        failed: str | None = await func(*args, **kwargs)
         if not failed:
             return True
         return False
@@ -82,9 +81,9 @@ def parse_float(func: Callable) -> Callable:
     """Parse integer response wrapper."""
 
     @wraps(func)
-    async def wrapper(*args, **kwargs) -> Optional[float]:
+    async def wrapper(*args, **kwargs) -> float | None:
         """Parse integer response."""
-        result: Optional[str] = await func(*args, **kwargs)
+        result: str | None = await func(*args, **kwargs)
         if result is not None:
             try:
                 return float(result)
@@ -99,9 +98,9 @@ def parse_int(func: Callable) -> Callable:
     """Parse integer response wrapper."""
 
     @wraps(func)
-    async def wrapper(*args, **kwargs) -> Optional[int]:
+    async def wrapper(*args, **kwargs) -> int | None:
         """Parse integer response."""
-        result: Optional[str] = await func(*args, **kwargs)
+        result: str | None = await func(*args, **kwargs)
         if result is not None:
             try:
                 return int(result)
@@ -118,7 +117,7 @@ def parse_bool(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(*args, **kwargs) -> bool:
         """Parse bool response."""
-        result: Optional[str] = await func(*args, **kwargs)
+        result: str | None = await func(*args, **kwargs)
         if result is not None:
             try:
                 return bool(int(result))
@@ -140,10 +139,10 @@ class ThyracontVacuumGauge(RS485Client):
         self,
         connection_config: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
         address: int = 1,
-        label: Optional[str] = None,
-        logger: Optional[Logger] = None,
-        timeout: Optional[float] = None,
-        backend: Optional[str] = None,
+        label: str | None = None,
+        logger: Logger | None = None,
+        timeout: float | None = None,
+        backend: str | None = None,
     ) -> None:
         """
         Initialize an ThyracontVacuumGauge client instance.
@@ -188,8 +187,8 @@ class ThyracontVacuumGauge(RS485Client):
 
     # pylint: disable=duplicate-code
     async def request_gauge(
-        self, access_code: AccessCode, command: str, data: Optional[bytes] = None
-    ) -> Optional[str]:
+        self, access_code: AccessCode, command: str, data: bytes | None = None
+    ) -> str | None:
         """
         Send a command to the gauge and return the response data.
         """
@@ -204,16 +203,16 @@ class ThyracontVacuumGauge(RS485Client):
         self.logger.debug("REQ: %s", request)
         if self.backend == "pymodbus":
             try:
-                response: Optional[ModbusPDU] = await asyncio.wait_for(
+                response: ModbusPDU | None = await asyncio.wait_for(
                     self.execute(request, no_response_expected=False),
                     timeout=self.timeout,
                 )
                 if response and hasattr(response, "data"):
                     self.logger.debug("Response: %s", response.data)
                     if response.function_code == 7:
-                        self.process_error_response(response.data)
-                        response.rtu_frame_size -= len(response.data)
-                        response.data = None
+                        self.process_error_response(response.data)  # ty: ignore[invalid-argument-type]
+                        response.rtu_frame_size -= len(response.data)  # ty: ignore[invalid-argument-type]
+                        response.data = None  # ty: ignore[invalid-assignment]
                     result = response.data
             except (TimeoutErrorAlias, ModbusOperationError) as exc:
                 # scietex.hal.serial 2.x raises ModbusOperationError on bus/device
@@ -244,7 +243,7 @@ class ThyracontVacuumGauge(RS485Client):
             parsed = self._parse_response(serial_response)
             result = parsed["data"]
             con.close()
-        return result
+        return result  # ty: ignore[invalid-return-type]
 
     def _parse_response(self, response: bytes) -> dict:
         """
@@ -276,7 +275,7 @@ class ThyracontVacuumGauge(RS485Client):
                     self.logger.error("Wrong address")
                     return result
                 if result["access_code"] == 7:  # Error
-                    self.process_error_response(result["data"].encode())
+                    self.process_error_response(result["data"].encode())  # ty: ignore[unresolved-attribute]
                     result["data"] = None
                     result["data_len"] = 0
             else:
@@ -294,77 +293,77 @@ class ThyracontVacuumGauge(RS485Client):
             err_msg = "Unknown error"
         self.logger.error("ERROR: %s", err_msg)
 
-    async def get_model(self) -> Optional[str]:
+    async def get_model(self) -> str | None:
         """Retrieve the gauge model identifier."""
         return await self.request_gauge(access_code=AccessCode.READ, command="TD")
 
-    async def get_product_name(self) -> Optional[str]:
+    async def get_product_name(self) -> str | None:
         """Retrieve the gauge product name identifier."""
         return await self.request_gauge(access_code=AccessCode.READ, command="PN")
 
-    async def get_device_sn(self) -> Optional[str]:
+    async def get_device_sn(self) -> str | None:
         """Retrieve device serial number."""
         return await self.request_gauge(access_code=AccessCode.READ, command="SD")
 
-    async def get_head_sn(self) -> Optional[str]:
+    async def get_head_sn(self) -> str | None:
         """Retrieve the head serial number."""
         return await self.request_gauge(access_code=AccessCode.READ, command="SH")
 
-    async def get_device_version(self) -> Optional[str]:
+    async def get_device_version(self) -> str | None:
         """Retrieve the device version identifier."""
         return await self.request_gauge(access_code=AccessCode.READ, command="VD")
 
-    async def get_firmware_version(self) -> Optional[str]:
+    async def get_firmware_version(self) -> str | None:
         """Retrieve the firmware version identifier."""
         return await self.request_gauge(access_code=AccessCode.READ, command="VF")
 
-    async def get_bootloader_version(self) -> Optional[str]:
+    async def get_bootloader_version(self) -> str | None:
         """Retrieve the bootloader version identifier."""
         return await self.request_gauge(access_code=AccessCode.READ, command="VB")
 
     @check_success
-    async def restart_gauge(self) -> Optional[str]:
+    async def restart_gauge(self) -> str | None:
         """Restart the gauge."""
         return await self.request_gauge(access_code=AccessCode.WRITE, command="DR")
 
-    async def get_operating_hours(self) -> Optional[dict[str, Optional[float]]]:
+    async def get_operating_hours(self) -> dict[str, float | None] | None:
         """Retrieve operating-hours statistics."""
-        oh_data: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="OH")
+        oh_data: str | None = await self.request_gauge(access_code=AccessCode.READ, command="OH")
         return decode_operating_hours(oh_data)
 
     async def get_sensor_statistics(
         self, sensor: Sensor | int
-    ) -> Optional[dict[str, Optional[float | str]]]:
+    ) -> dict[str, float | str | None] | None:
         """Retrieve sensor statistics and wear status."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         if _sensor not in (Sensor.PIRANI, Sensor.HOT_CATHODE, Sensor.COLD_CATHODE):
             return None
-        pm_data: Optional[str] = await self.request_gauge(
+        pm_data: str | None = await self.request_gauge(
             access_code=AccessCode.READ, command="PM", data=f"{_sensor.value}".encode()
         )
         return decode_wear_status(pm_data)
 
     @parse_int
-    async def get_response_delay(self) -> Optional[str]:
+    async def get_response_delay(self) -> str | None:
         """Retrieve current response delay in microseconds."""
         return await self.request_gauge(access_code=AccessCode.READ, command="RD")
 
-    async def set_response_delay(self, us: int, store: Optional[bool] = None) -> Optional[int]:
+    async def set_response_delay(self, us: int, store: bool | None = None) -> int | None:
         """Set response delay in microseconds."""
         delay = max(0, min(us, 99999))
         data = f"{'S' if store else ''}{delay}".encode()
         await self.request_gauge(access_code=AccessCode.WRITE, command="RD", data=data)
         return await self.get_response_delay()
 
-    async def reset_response_delay(self) -> Optional[int]:
+    async def reset_response_delay(self) -> int | None:
         """Reset response delay to default value."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="RD")
         return await self.get_response_delay()
 
     @check_success
     async def set_baudrate(
-        self, baudrate: int, store: Optional[bool] = None, max_baudrate: int = 250000
-    ) -> Optional[str]:
+        self, baudrate: int, store: bool | None = None, max_baudrate: int = 250000
+    ) -> str | None:
         """Set communication baudrate."""
         br = adjust_baudrate(baudrate, max_baudrate)
         return await self.request_gauge(
@@ -372,30 +371,30 @@ class ThyracontVacuumGauge(RS485Client):
         )
 
     @check_success
-    async def set_device_address(self, da: int) -> Optional[str]:
+    async def set_device_address(self, da: int) -> str | None:
         """Set device address."""
         return await self.request_gauge(
             access_code=AccessCode.WRITE, command="DA", data=f"{max(1, min(da, 16))}".encode()
         )
 
     @check_success
-    async def reset_device_address(self) -> Optional[str]:
+    async def reset_device_address(self) -> str | None:
         """Reset device address to default value."""
         return await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DA")
 
-    async def get_measurement_range(self) -> Optional[dict[str, Optional[float]]]:
+    async def get_measurement_range(self) -> dict[str, float | None] | None:
         """
         Retrieve the gauge measurement range.
         """
-        result: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="MR")
+        result: str | None = await self.request_gauge(access_code=AccessCode.READ, command="MR")
         if result is not None:
             return decode_range(result)
         return None
 
     async def streaming_mode(
         self,
-        mode: Optional[StreamingMode | int] = None,
-        additional_data: Optional[list[int | str]] = None,
+        mode: StreamingMode | int | None = None,
+        additional_data: list[int | str] | None = None,
     ) -> bool:
         """Enable/disable streaming mode."""
         data: str = f"{StreamingMode.V1.value}"
@@ -407,14 +406,14 @@ class ThyracontVacuumGauge(RS485Client):
         if additional_data is not None:
             for data_channel in additional_data:
                 data += f"D{data_channel}"
-        result: Optional[str] = await self.request_gauge(
+        result: str | None = await self.request_gauge(
             access_code=AccessCode.WRITE, command="SM", data=data.encode()
         )
         if result:
             return False
         return True
 
-    async def measure(self, sensor: Optional[Sensor | int] = None) -> Optional[float]:
+    async def measure(self, sensor: Sensor | int | None = None) -> float | None:
         """
         Measure the current pressure in millibars.
 
@@ -429,24 +428,22 @@ class ThyracontVacuumGauge(RS485Client):
         if sensor is not None:
             _sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         cmd: str = f"M{_sensor.value if _sensor.value > 0 else 'V'}"
-        gauge_data: Optional[str] = await self.request_gauge(
-            access_code=AccessCode.READ, command=cmd
-        )
+        gauge_data: str | None = await self.request_gauge(access_code=AccessCode.READ, command=cmd)
         if gauge_data is not None:
             return decode_float(gauge_data)
         return None
 
     @parse_float
-    async def get_temperature(self, sensor: Sensor | int) -> Optional[str]:
+    async def get_temperature(self, sensor: Sensor | int) -> str | None:
         """Get sensor temperature"""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         if _sensor not in (Sensor.PIEZO, Sensor.AMBIENT):
             return None
         return await self.request_gauge(access_code=AccessCode.READ, command=f"T{_sensor.value}")
 
-    async def get_relay(self, rl_n: int) -> Optional[dict[str, Optional[float | str]]]:
+    async def get_relay(self, rl_n: int) -> dict[str, float | str | None] | None:
         """Retrieve relay settings"""
-        rl_data: Optional[str] = await self.request_gauge(
+        rl_data: str | None = await self.request_gauge(
             access_code=AccessCode.READ, command=f"R{rl_n}"
         )
         if rl_data is not None:
@@ -457,21 +454,21 @@ class ThyracontVacuumGauge(RS485Client):
         return None
 
     async def set_relay(
-        self, rl_n: int, settings: dict[str, Optional[float | str]]
-    ) -> Optional[dict[str, Optional[float | str]]]:
+        self, rl_n: int, settings: dict[str, float | str | None]
+    ) -> dict[str, float | str | None] | None:
         """Set relay settings."""
         data = encode_relay_data(settings)
         await self.request_gauge(access_code=AccessCode.WRITE, command=f"R{rl_n}", data=data)
         return await self.get_relay(rl_n)
 
-    async def reset_relay(self, rl_n: int) -> Optional[dict[str, Optional[float | str]]]:
+    async def reset_relay(self, rl_n: int) -> dict[str, float | str | None] | None:
         """Reset relay to default value."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command=f"R{rl_n}")
         return await self.get_relay(rl_n)
 
-    async def get_display_units(self) -> Optional[DisplayUnits]:
+    async def get_display_units(self) -> DisplayUnits | None:
         """Get current display units."""
-        units: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="DU")
+        units: str | None = await self.request_gauge(access_code=AccessCode.READ, command="DU")
         if units:
             try:
                 return DisplayUnits.from_str(units)
@@ -479,7 +476,7 @@ class ThyracontVacuumGauge(RS485Client):
                 pass
         return None
 
-    async def set_display_units(self, units: DisplayUnits | str) -> Optional[DisplayUnits]:
+    async def set_display_units(self, units: DisplayUnits | str) -> DisplayUnits | None:
         """Set display units."""
         _units: DisplayUnits = (
             units if isinstance(units, DisplayUnits) else DisplayUnits.from_str(units)
@@ -489,16 +486,14 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_display_units()
 
-    async def reset_display_units(self) -> Optional[DisplayUnits]:
+    async def reset_display_units(self) -> DisplayUnits | None:
         """Reset display units to default value."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DU")
         return await self.get_display_units()
 
-    async def get_display_orientation(self) -> Optional[DisplayOrientation]:
+    async def get_display_orientation(self) -> DisplayOrientation | None:
         """Get display orientation"""
-        response: Optional[str] = await self.request_gauge(
-            access_code=AccessCode.READ, command="DO"
-        )
+        response: str | None = await self.request_gauge(access_code=AccessCode.READ, command="DO")
         if response is not None:
             try:
                 return DisplayOrientation(int(bool(int(response))))
@@ -508,7 +503,7 @@ class ThyracontVacuumGauge(RS485Client):
 
     async def set_display_orientation(
         self, direction: DisplayOrientation | int
-    ) -> Optional[DisplayOrientation]:
+    ) -> DisplayOrientation | None:
         """Set display orientation."""
         _direction: DisplayOrientation = (
             direction
@@ -519,12 +514,12 @@ class ThyracontVacuumGauge(RS485Client):
         await self.request_gauge(access_code=AccessCode.WRITE, command="DO", data=data)
         return await self.get_display_orientation()
 
-    async def reset_display_orientation(self) -> Optional[DisplayOrientation]:
+    async def reset_display_orientation(self) -> DisplayOrientation | None:
         """Reset display orientation to default value."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DO")
         return await self.get_display_orientation()
 
-    async def rotate_display(self) -> Optional[DisplayOrientation]:
+    async def rotate_display(self) -> DisplayOrientation | None:
         """Change display orientation to opposite."""
         orientation = await self.get_display_orientation()
         if orientation is not None:
@@ -532,11 +527,9 @@ class ThyracontVacuumGauge(RS485Client):
             return await self.set_display_orientation(rot)
         return None
 
-    async def get_display_data_source(self) -> Optional[Sensor]:
+    async def get_display_data_source(self) -> Sensor | None:
         """Retrieve display data source."""
-        response: Optional[str] = await self.request_gauge(
-            access_code=AccessCode.READ, command="DD"
-        )
+        response: str | None = await self.request_gauge(access_code=AccessCode.READ, command="DD")
         if response is not None:
             try:
                 return Sensor.from_int(int(response))
@@ -544,7 +537,7 @@ class ThyracontVacuumGauge(RS485Client):
                 pass
         return None
 
-    async def set_display_data_source(self, sensor: Sensor | int) -> Optional[Sensor]:
+    async def set_display_data_source(self, sensor: Sensor | int) -> Sensor | None:
         """Set display data source to value."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -552,15 +545,15 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_display_data_source()
 
-    async def reset_display_data_source(self) -> Optional[Sensor]:
+    async def reset_display_data_source(self) -> Sensor | None:
         """Reset display data source to default value."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DD")
         return await self.get_display_data_source()
 
     @check_success
-    async def adjust_high(self, pressure: Optional[float] = None) -> Optional[str]:
+    async def adjust_high(self, pressure: float | None = None) -> str | None:
         """Adjust high pressure level, over-range (e.g. at atmospheric pressure)."""
-        data: Optional[bytes] = None
+        data: bytes | None = None
         if pressure is not None:
             try:
                 data = encode_float_1(pressure).encode()
@@ -569,9 +562,9 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.request_gauge(access_code=AccessCode.WRITE, command="AH", data=data)
 
     @check_success
-    async def adjust_low(self, pressure: Optional[float] = None) -> Optional[str]:
+    async def adjust_low(self, pressure: float | None = None) -> str | None:
         """Adjust sensor to low pressure, e.g. under range."""
-        data: Optional[bytes] = None
+        data: bytes | None = None
         if pressure is not None:
             try:
                 data = encode_float_1(pressure).encode()
@@ -580,7 +573,7 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.request_gauge(access_code=AccessCode.WRITE, command="AL", data=data)
 
     @parse_bool
-    async def get_degas(self) -> Optional[str]:
+    async def get_degas(self) -> str | None:
         """Retrieve degas ON/OFF state."""
         return await self.request_gauge(access_code=AccessCode.READ, command="DG")
 
@@ -592,7 +585,7 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.get_degas()
 
     @parse_bool
-    async def get_digital_logic(self) -> Optional[str]:
+    async def get_digital_logic(self) -> str | None:
         """
         Retrieve Digital/Degas logic state.
         Degas Logic is active low (0/False) (VSH)
@@ -619,34 +612,34 @@ class ThyracontVacuumGauge(RS485Client):
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DL")
         return await self.get_digital_logic()
 
-    async def get_sensor_transition(self) -> Optional[dict[str, Optional[int | float]]]:
+    async def get_sensor_transition(self) -> dict[str, int | float | None] | None:
         """Retrieve sensor transition rule."""
-        result: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="ST")
+        result: str | None = await self.request_gauge(access_code=AccessCode.READ, command="ST")
         if result is not None:
             return decode_sensor_transition(result)
         return None
 
     async def set_sensor_transition(
-        self, transition_rule: dict[str, Optional[int | float]]
-    ) -> Optional[dict[str, Optional[int | float]]]:
+        self, transition_rule: dict[str, int | float | None]
+    ) -> dict[str, int | float | None] | None:
         """Set sensor transition rule."""
         data = encode_sensor_transition(transition_rule)
         await self.request_gauge(access_code=AccessCode.WRITE, command="ST", data=data)
         return await self.get_sensor_transition()
 
-    async def reset_sensor_transition(self) -> Optional[dict[str, Optional[int | float]]]:
+    async def reset_sensor_transition(self) -> dict[str, int | float | None] | None:
         """Reset sensor transition to default rule."""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="ST")
         return await self.get_sensor_transition()
 
     @parse_bool
-    async def get_cathode_status(self) -> Optional[str]:
+    async def get_cathode_status(self) -> str | None:
         """Retrieve cathode ON/OFF status."""
         return await self.request_gauge(access_code=AccessCode.READ, command="CA")
 
-    async def get_cathode_control_mode(self) -> Optional[CathodeControlMode]:
+    async def get_cathode_control_mode(self) -> CathodeControlMode | None:
         """Retrieve cathode control mode (MAN/AUTO)."""
-        state: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="CM")
+        state: str | None = await self.request_gauge(access_code=AccessCode.READ, command="CM")
         if state is not None:
             try:
                 return CathodeControlMode(int(state))
@@ -656,7 +649,7 @@ class ThyracontVacuumGauge(RS485Client):
 
     async def set_cathode_control_mode(
         self, mode: CathodeControlMode | int | bool
-    ) -> Optional[CathodeControlMode]:
+    ) -> CathodeControlMode | None:
         """Set cathode control mode (MAN/AUTO)."""
         if isinstance(mode, (bool, int)):
             data = f"{int(bool(mode))}".encode()
@@ -665,13 +658,13 @@ class ThyracontVacuumGauge(RS485Client):
         await self.request_gauge(access_code=AccessCode.WRITE, command="CM", data=data)
         return await self.get_cathode_control_mode()
 
-    async def reset_cathode_control_mode(self) -> Optional[CathodeControlMode]:
+    async def reset_cathode_control_mode(self) -> CathodeControlMode | None:
         """Reset cathode control mode (MAN/AUTO) to default value"""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="CM")
         return await self.get_cathode_control_mode()
 
     @parse_bool
-    async def get_cathode_control(self) -> Optional[str]:
+    async def get_cathode_control(self) -> str | None:
         """Retrieve cathode ON/OFF control state."""
         return await self.request_gauge(access_code=AccessCode.READ, command="CC")
 
@@ -688,39 +681,39 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.get_cathode_control()
 
     @parse_int
-    async def get_filament_control(self) -> Optional[str]:
+    async def get_filament_control(self) -> str | None:
         """Retrieve filament control mode."""
         return await self.request_gauge(access_code=AccessCode.READ, command="FC")
 
-    async def set_filament_control(self, mode: int) -> Optional[int]:
+    async def set_filament_control(self, mode: int) -> int | None:
         """Set filament control to selected mode."""
         await self.request_gauge(
             access_code=AccessCode.WRITE, command="FC", data=f"{mode}".encode()
         )
         return await self.get_filament_control()
 
-    async def reset_filament_control(self) -> Optional[int]:
+    async def reset_filament_control(self) -> int | None:
         """Reset filament control to default mode"""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="FC")
         return await self.get_filament_control()
 
     @parse_int
-    async def get_filament_number(self) -> Optional[str]:
+    async def get_filament_number(self) -> str | None:
         """Retrieve filament number"""
         return await self.request_gauge(access_code=AccessCode.READ, command="FN")
 
     @parse_int
-    async def get_filament_status(self) -> Optional[str]:
+    async def get_filament_status(self) -> str | None:
         """Retrieve current filament status."""
         return await self.request_gauge(access_code=AccessCode.READ, command="FS")
 
     @parse_float
-    async def get_gas_correction(self, sensor: Sensor | int) -> Optional[str]:
+    async def get_gas_correction(self, sensor: Sensor | int) -> str | None:
         """Retrieve gas correction coefficient for provided sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         return await self.request_gauge(access_code=AccessCode.READ, command=f"C{_sensor.value}")
 
-    async def set_gas_correction(self, sensor: Sensor | int, corr: float) -> Optional[float]:
+    async def set_gas_correction(self, sensor: Sensor | int, corr: float) -> float | None:
         """Set gas correction coefficient for provided sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -730,7 +723,7 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_gas_correction(sensor)
 
-    async def reset_gas_correction(self, sensor: Sensor | int) -> Optional[float]:
+    async def reset_gas_correction(self, sensor: Sensor | int) -> float | None:
         """Set gas correction coefficient for provided sensor to default value."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -738,9 +731,9 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_gas_correction(sensor)
 
-    async def get_output_characteristic(self) -> Optional[dict[str, Optional[str | int | float]]]:
+    async def get_output_characteristic(self) -> dict[str, str | int | float | None] | None:
         """Retrieve output characteristics"""
-        oc: Optional[str] = await self.request_gauge(access_code=AccessCode.READ, command="OC")
+        oc: str | None = await self.request_gauge(access_code=AccessCode.READ, command="OC")
         if oc is not None:
             try:
                 return decode_output_characteristic(oc)
@@ -750,23 +743,23 @@ class ThyracontVacuumGauge(RS485Client):
 
     async def reset_output_characteristic(
         self,
-    ) -> Optional[dict[str, Optional[str | int | float]]]:
+    ) -> dict[str, str | int | float | None] | None:
         """Reset output characteristics to default value"""
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="OC")
         return await self.get_output_characteristic()
 
     async def set_tab_output_characteristic(
         self,
-        tab: dict[str, Optional[str | int | float]],
-        nodes: list[dict[str, Optional[str | int | float]]],
+        tab: dict[str, str | int | float | None],
+        nodes: list[dict[str, str | int | float | None]],
     ) -> tuple[
-        Optional[dict[str, Optional[str | int | float]]],
-        Optional[list[dict[str, Optional[str | int | float]]]],
+        dict[str, str | int | float | None] | None,
+        list[dict[str, str | int | float | None]] | None,
     ]:
         """Set output characteristics."""
         tab_data = encode_tab_output_characteristic(tab).encode()
         nodes_set = []
-        failed: Optional[str] = await self.request_gauge(
+        failed: str | None = await self.request_gauge(
             access_code=AccessCode.WRITE, command="OC", data=tab_data
         )
         if not failed:
@@ -776,7 +769,7 @@ class ThyracontVacuumGauge(RS485Client):
                     access_code=AccessCode.WRITE, command="OC", data=node_set_data
                 )
                 if not failed:
-                    node_data: Optional[str] = await self.request_gauge(
+                    node_data: str | None = await self.request_gauge(
                         access_code=AccessCode.READ, command="OC", data=f"E{node['node']}".encode()
                     )
                     if node_data is not None:
@@ -788,7 +781,7 @@ class ThyracontVacuumGauge(RS485Client):
         return None, None
 
     @parse_bool
-    async def get_panel_locked(self) -> Optional[str]:
+    async def get_panel_locked(self) -> str | None:
         """Retrieve panel locked state."""
         return await self.request_gauge(access_code=AccessCode.READ, command="PS")
 
@@ -800,7 +793,7 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.get_panel_locked()
 
     @parse_bool
-    async def get_controller_enabled(self) -> Optional[str]:
+    async def get_controller_enabled(self) -> str | None:
         """Retrieve controller enabled/disabled state."""
         return await self.request_gauge(access_code=AccessCode.READ, command="CS")
 
@@ -812,14 +805,14 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.get_controller_enabled()
 
     @parse_int
-    async def get_low_pass_filter(self, sensor: Sensor | int) -> Optional[str]:
+    async def get_low_pass_filter(self, sensor: Sensor | int) -> str | None:
         """Retrieve low-pass filter value for sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         return await self.request_gauge(
             access_code=AccessCode.READ, command="LF", data=f"{_sensor.value}".encode()
         )
 
-    async def set_low_pass_filter(self, sensor: Sensor | int, lf: int) -> Optional[int]:
+    async def set_low_pass_filter(self, sensor: Sensor | int, lf: int) -> int | None:
         """Set low-pass filter value for sensor."""
         _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
         await self.request_gauge(
@@ -827,9 +820,9 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_low_pass_filter(sensor)
 
-    async def reset_low_pass_filter(self, sensor: Optional[Sensor | int] = None) -> Optional[int]:
+    async def reset_low_pass_filter(self, sensor: Sensor | int | None = None) -> int | None:
         """Reset low-pass filter to default value."""
-        data: Optional[bytes] = None
+        data: bytes | None = None
         if sensor is not None:
             _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
             data = f"{_sensor.value}".encode()
@@ -855,7 +848,7 @@ class ThyracontVacuumGauge(RS485Client):
         }
         return data
 
-    async def set_pressure(self, pressure: float) -> Optional[float]:
+    async def set_pressure(self, pressure: float) -> float | None:
         """
         Set and return the pressure value.
 

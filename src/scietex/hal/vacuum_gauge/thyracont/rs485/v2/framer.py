@@ -13,6 +13,7 @@ Classes:
 """
 
 from pymodbus.pdu import ModbusPDU
+
 from ..framer import ThyracontRS485ASCIIFramer
 
 

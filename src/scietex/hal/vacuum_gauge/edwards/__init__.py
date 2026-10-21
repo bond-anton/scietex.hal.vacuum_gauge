@@ -15,6 +15,6 @@ Modules:
     calibration_data: Provides calibration data arrays for Edwards APG-M and APG-L models.
 """
 
-from .analog import APGMGauge, APGLGauge
+from .analog import APGLGauge, APGMGauge
 
 __all__ = ["APGMGauge", "APGLGauge"]

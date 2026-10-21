@@ -22,11 +22,9 @@ Classes:
 
 import struct
 from logging import Logger
-from typing import Optional
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.pdu import ExceptionResponse
-
 from scietex.hal.serial import ModbusOperationError
 from scietex.hal.serial.utilities.numeric import ByteOrder, combine_32bit
 
@@ -87,7 +85,7 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
         unit_id: int = 1,
         label: str = "Thyracont Gauge",
         timeout: float = 1.0,
-        logger: Optional[Logger] = None,
+        logger: Logger | None = None,
     ) -> None:
         """
         Initialize the client.
@@ -109,7 +107,7 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
         # `AsyncModbusTcpClient` binds to the running event loop in its
         # constructor, so it cannot be built here: the client is created in
         # `connect()`, which always runs inside the loop.
-        self._client: Optional[AsyncModbusTcpClient] = None
+        self._client: AsyncModbusTcpClient | None = None
 
     async def connect(self) -> None:
         """
@@ -123,13 +121,10 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
                 later, on the first read.
         """
         if self._client is None:
-            self._client = AsyncModbusTcpClient(
-                self._host, port=self._port, timeout=self._timeout
-            )
+            self._client = AsyncModbusTcpClient(self._host, port=self._port, timeout=self._timeout)
         if not await self._client.connect():
             raise ModbusOperationError(
-                f"Failed to connect to vacuum gauge gateway at "
-                f"{self._host}:{self._port}"
+                f"Failed to connect to vacuum gauge gateway at {self._host}:{self._port}"
             )
 
     async def close(self) -> None:
@@ -171,7 +166,7 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
             )
         return _registers_to_float(list(response.registers))
 
-    async def measure(self) -> Optional[float]:
+    async def measure(self) -> float | None:
         """
         Read the current pressure.
 

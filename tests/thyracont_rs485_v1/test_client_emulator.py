@@ -7,11 +7,12 @@ setpoints, and Penning gauge control using both 'pymodbus' and 'pyserial' backen
 """
 
 import logging
+
 import pytest
+from scietex.hal.serial import VirtualSerialPair
 
 # pylint: disable=ungrouped-imports
 from scietex.hal.serial.config import ModbusSerialConnectionConfig
-from scietex.hal.serial import VirtualSerialPair
 
 try:
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontVacuumGauge

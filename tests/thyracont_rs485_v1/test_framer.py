@@ -10,15 +10,15 @@ import pytest
 from pymodbus.pdu import ModbusPDU
 
 try:
-    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
-    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.decoder import ThyracontDecodePDU
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.checksum import calc_checksum, check_checksum
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.decoder import ThyracontDecodePDU
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.framer import ThyracontASCIIFramer
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
-    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.decoder import ThyracontDecodePDU
     from scietex.hal.vacuum_gauge.thyracont.rs485.checksum import calc_checksum, check_checksum
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.decoder import ThyracontDecodePDU
     from scietex.hal.vacuum_gauge.thyracont.rs485.v1.framer import ThyracontASCIIFramer
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.request import ThyracontRequest
 
 
 @pytest.fixture

@@ -5,16 +5,16 @@ This module tests the TTR101NGauge class from analog.py, ensuring correct initia
 voltage-to-pressure conversion, and atmospheric correction behavior.
 """
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_almost_equal
 
 try:
-    from src.scietex.hal.vacuum_gauge.leybold import TTR101NGauge
     from src.scietex.hal.vacuum_gauge.base.atmosphere import Atmosphere
+    from src.scietex.hal.vacuum_gauge.leybold import TTR101NGauge
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.leybold import TTR101NGauge
     from scietex.hal.vacuum_gauge.base.atmosphere import Atmosphere
+    from scietex.hal.vacuum_gauge.leybold import TTR101NGauge
 
 
 # Tests for TTR101NGauge

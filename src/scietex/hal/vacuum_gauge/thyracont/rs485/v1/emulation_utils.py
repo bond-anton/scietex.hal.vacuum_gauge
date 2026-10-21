@@ -35,7 +35,6 @@ Functions:
 """
 
 from collections.abc import MutableSequence
-from typing import Optional
 
 from scietex.hal.serial.utilities.numeric import combine_32bit, split_32bit
 
@@ -99,7 +98,7 @@ def write_two_regs(store: MutableSequence[int], value: int, start_reg: int) -> N
     store[start_reg + 1] = b
 
 
-def pressure_from_reg(store: MutableSequence[int], start_reg: int) -> Optional[float]:
+def pressure_from_reg(store: MutableSequence[int], start_reg: int) -> float | None:
     """
     Reads and decodes a pressure value from two registers.
 

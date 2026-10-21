@@ -1,16 +1,14 @@
 """Emulation of Erstevak vacuum gauge over serial communication."""
 
 # pylint: disable=duplicate-code
-from typing import Optional
 import asyncio
-import time
 import logging
+import time
 
 from scietex.hal.serial import VirtualSerialPair
 from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 
-from scietex.hal.vacuum_gauge.erstevak.rs485.v1 import ErstevakVacuumGauge
-from scietex.hal.vacuum_gauge.erstevak.rs485.v1 import ErstevakEmulator
+from scietex.hal.vacuum_gauge.erstevak.rs485.v1 import ErstevakEmulator, ErstevakVacuumGauge
 
 
 # pylint: disable=too-many-statements
@@ -18,7 +16,7 @@ async def main(
     address: int,
     client_con: Config,
     server_con: Config,
-    logger: Optional[logging.Logger] = None,
+    logger: logging.Logger | None = None,
 ):
     """Main coroutine."""
     emulator = ErstevakEmulator(server_con, logger=logger, address=address)

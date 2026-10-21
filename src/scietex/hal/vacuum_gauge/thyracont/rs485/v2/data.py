@@ -2,7 +2,6 @@
 Thyracont RS485 Version 2 Data Module.
 """
 
-from typing import Optional
 from enum import Enum
 
 
@@ -218,7 +217,7 @@ class CathodeControlMode(Enum):
     AUTO = 1
 
 
-def decode_float(data: str) -> Optional[float]:
+def decode_float(data: str) -> float | None:
     """Decode string to float value."""
     if data is None or len(data) == 0:
         return None
@@ -248,9 +247,9 @@ def encode_float_1(value: float) -> str:
     return mantissa + f"e{exp_val:d}"
 
 
-def decode_range(data: str) -> dict[str, Optional[float]]:
+def decode_range(data: str) -> dict[str, float | None]:
     """Decode string with range data to dict."""
-    result: dict[str, Optional[float]] = {"high": None, "low": None}
+    result: dict[str, float | None] = {"high": None, "low": None}
     try:
         high, low = data.split("L")
         _, high = high.split("H")
@@ -266,9 +265,14 @@ def encode_range(limits: dict[str, float]) -> str:
     return f"H{encode_float_1(limits['high'])}L{encode_float_1(limits['low'])}"
 
 
-def decode_sensor_transition(st_data: str) -> Optional[dict[str, Optional[int | float]]]:
+def decode_sensor_transition(st_data: str) -> dict[str, int | float | None] | None:
     """Decode relay data to dict."""
-    result: dict[str, Optional[int | float]] = {"mode": None, "from": None, "to": None, "D": None}
+    result: dict[str, int | float | None] = {
+        "mode": None,
+        "from": None,
+        "to": None,
+        "D": None,
+    }
     try:
         if "D" in st_data:
             result["D"] = float(st_data[1:])
@@ -284,9 +288,9 @@ def decode_sensor_transition(st_data: str) -> Optional[dict[str, Optional[int | 
     return result
 
 
-def encode_sensor_transition(st_data: dict[str, Optional[int | float]]) -> Optional[bytes]:
+def encode_sensor_transition(st_data: dict[str, int | float | None]) -> bytes | None:
     """Encode sensor transition data."""
-    data: Optional[bytes] = None
+    data: bytes | None = None
     data_line: str = ""
     try:
         if st_data["mode"] is None:
@@ -303,7 +307,7 @@ def encode_sensor_transition(st_data: dict[str, Optional[int | float]]) -> Optio
     return data
 
 
-def decode_relay_data(rl_data: str) -> Optional[dict[str, Optional[float | str]]]:
+def decode_relay_data(rl_data: str) -> dict[str, float | str | None] | None:
     """Decode relay data to dict."""
     result = {"on": 0.0, "off": 0.0, "D": None, "C": None, "mode": "pressure"}
     if rl_data in ("E", "!E", "U", "!U", "O", "!O", "C", "!C", "W", "!W", "T0", "T1"):
@@ -325,7 +329,7 @@ def decode_relay_data(rl_data: str) -> Optional[dict[str, Optional[float | str]]
     return result
 
 
-def encode_relay_data(rl_data: dict) -> Optional[bytes]:
+def encode_relay_data(rl_data: dict) -> bytes | None:
     """Encode relay data."""
     try:
         if rl_data["mode"] == "pressure":
@@ -342,9 +346,9 @@ def encode_relay_data(rl_data: dict) -> Optional[bytes]:
     return None
 
 
-def decode_output_characteristic(oc_data: str) -> dict[str, Optional[str | int | float]]:
+def decode_output_characteristic(oc_data: str) -> dict[str, str | int | float | None]:
     """Decode output characteristics to convenient dictionary."""
-    result: dict[str, Optional[str | int | float]] = {"mode": oc_data[:3]}
+    result: dict[str, str | int | float | None] = {"mode": oc_data[:3]}
     if result["mode"] in ("Lin", "Log"):
         result.update(
             {
@@ -363,10 +367,10 @@ def decode_output_characteristic(oc_data: str) -> dict[str, Optional[str | int |
         result["gain"] = float(g)
         o, data = data.split("L", 1)
         result["offset"] = float(o)
-        l, data = data.split("L", 1)
-        result["lower_limit"] = float(l)
-        l, data = data.split("U", 1)
-        result["upper_limit"] = float(l)
+        lower, data = data.split("L", 1)
+        result["lower_limit"] = float(lower)
+        upper, data = data.split("U", 1)
+        result["upper_limit"] = float(upper)
         u, data = data.split("O", 1)
         result["under_range"] = float(u)
         o, data = data.split("F", 1)
@@ -395,7 +399,7 @@ def decode_output_characteristic(oc_data: str) -> dict[str, Optional[str | int |
     return result
 
 
-def encode_tab_output_characteristic(oc: dict[str, Optional[str | int | float]]) -> str:
+def encode_tab_output_characteristic(oc: dict[str, str | int | float | None]) -> str:
     """Encode Tab output characteristics from dictionary."""
     data = ""
     if "size" in oc:
@@ -405,7 +409,7 @@ def encode_tab_output_characteristic(oc: dict[str, Optional[str | int | float]])
     return data
 
 
-def decode_operating_hours(oh_data: Optional[str]) -> Optional[dict[str, Optional[float]]]:
+def decode_operating_hours(oh_data: str | None) -> dict[str, float | None] | None:
     """Decode operating-hours response."""
     if oh_data:
         try:
@@ -422,11 +426,11 @@ def decode_operating_hours(oh_data: Optional[str]) -> Optional[dict[str, Optiona
     return None
 
 
-def decode_wear_status(pm_data: Optional[str]) -> Optional[dict[str, Optional[float | str]]]:
+def decode_wear_status(pm_data: str | None) -> dict[str, float | str | None] | None:
     """Decode sensor wear estimation response."""
     if pm_data:
         try:
-            result: Optional[dict[str, Optional[float | str]]]
+            result: dict[str, float | str | None] | None
             if "A" in pm_data:  # Pirani W[int]A[int]
                 result = {"wear": 0.0, "status": None, "hours_since_calibration": None}
                 w, a = pm_data.split("A")

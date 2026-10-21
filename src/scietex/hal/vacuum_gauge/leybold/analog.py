@@ -16,7 +16,6 @@ Key Features:
     - Supports atmospheric gas adjustments with specific correction factors for known gases.
 """
 
-from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
@@ -66,7 +65,7 @@ class TTR101NGauge(ExponentialVacuumGauge):
         Atmosphere.XE: 1.0,  # Unknown; default value
     }
 
-    def __init__(self, atmosphere: Optional[str | Atmosphere] = None):
+    def __init__(self, atmosphere: str | Atmosphere | None = None):
         """
         Initializes the TTR101NGauge instance.
 

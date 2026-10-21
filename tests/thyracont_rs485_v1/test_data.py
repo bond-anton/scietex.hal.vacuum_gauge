@@ -7,26 +7,27 @@ formatting, and calibration value conversion.
 """
 
 from decimal import Decimal
-from numpy.testing import assert_almost_equal
+
 import pytest
+from numpy.testing import assert_almost_equal
 
 try:
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.data import (
+        _calibration_decode,
+        _calibration_encode,
+        _pressure_decode,
+        _pressure_encode,
         f_exp,
         f_man,
-        _pressure_encode,
-        _pressure_decode,
-        _calibration_encode,
-        _calibration_decode,
     )
 except ModuleNotFoundError:
     from scietex.hal.vacuum_gauge.thyracont.rs485.v1.data import (
+        _calibration_decode,
+        _calibration_encode,
+        _pressure_decode,
+        _pressure_encode,
         f_exp,
         f_man,
-        _pressure_encode,
-        _pressure_decode,
-        _calibration_encode,
-        _calibration_decode,
     )
 
 

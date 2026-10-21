@@ -7,6 +7,7 @@ hours, sensor wear statistics, and identification queries.
 """
 
 import logging
+
 import pytest
 
 # pylint: disable=ungrouped-imports

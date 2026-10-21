@@ -13,7 +13,6 @@ Classes:
         `FramerAscii` methods for encoding, decoding, and processing incoming frames.
 """
 
-from typing import Optional
 from pymodbus.exceptions import ModbusIOException
 from pymodbus.framer import FramerAscii
 from pymodbus.pdu import ModbusPDU
@@ -126,7 +125,7 @@ class ThyracontRS485ASCIIFramer(FramerAscii):
 
     def handleFrame(
         self, data: bytes, exp_devid: int, exp_tid: int
-    ) -> tuple[int, Optional[ModbusPDU]]:
+    ) -> tuple[int, ModbusPDU | None]:
         """
         Process new packet pattern.
 

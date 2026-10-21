@@ -12,7 +12,7 @@ Classes:
         into `ThyracontRequest` objects.
 """
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pymodbus import ModbusException
 from pymodbus.pdu import DecodePDU, ModbusPDU
@@ -85,11 +85,11 @@ class ThyracontRS485DecodePDU(DecodePDU):
         """
         super().__init__(is_server)
         self.store: list[int] | None = store
-        self.state: "ThyracontV2State | None" = state
+        self.state: ThyracontV2State | None = state
         self.pdu_table: dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]] = {}
         self.pdu_sub_table: dict[int, dict[int, tuple[type[ModbusPDU], type[ModbusPDU]]]] = {}
 
-    def lookupPduClass(self, data: bytes) -> Optional[type[ModbusPDU]]:
+    def lookupPduClass(self, data: bytes) -> type[ModbusPDU] | None:
         """
         Retrieve the PDU class for decoding based on the frame data.
 
@@ -112,7 +112,7 @@ class ThyracontRS485DecodePDU(DecodePDU):
         function_code = 0
         return self.pdu_table.get(function_code, (None, None))[self.pdu_inx]
 
-    def decode(self, frame: bytes) -> Optional[ModbusPDU]:
+    def decode(self, frame: bytes) -> ModbusPDU | None:
         """
         Decode a Thyracont frame into an `ThyracontRequest` instance.
 
@@ -152,7 +152,7 @@ class ThyracontRS485DecodePDU(DecodePDU):
             if not (pdu_class := self.pdu_table.get(function_code, (None, None))[self.pdu_inx]):
                 return None
             command: str = frame[0:1].decode()
-            pdu = pdu_class(command=command, data=frame[1:], store=self.store)  # type: ignore[call-arg]
+            pdu = pdu_class(command=command, data=frame[1:], store=self.store)  # ty: ignore[unknown-argument]
             pdu.decode(frame[1:])
             pdu.registers = list(frame)[1:7]
             return pdu

@@ -20,7 +20,6 @@ Notes:
 
 import numpy as np
 
-
 APG_M_CALIBRATION_DATA = np.array(
     [
         [2.00e00, 1.00e-05],

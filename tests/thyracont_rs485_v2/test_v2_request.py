@@ -121,7 +121,7 @@ async def test_datastore_update_read_pressure(state):
     assert response.command == "MV"
     assert response.function_code == AccessCode.READ_RESPONSE.value
     assert response.data == "1.000e3"
-    assert response.registers == list("1.000e3".encode())
+    assert response.registers == list(b"1.000e3")
     assert response.dev_id == 2
     assert response.transaction_id == 1
 
@@ -137,7 +137,7 @@ async def test_datastore_update_model(state):
     assert response.command == "TD"
     assert response.function_code == AccessCode.READ_RESPONSE.value
     assert response.data == "MTM9D"
-    assert response.registers == list("MTM9D".encode())
+    assert response.registers == list(b"MTM9D")
 
 
 # pylint: disable=redefined-outer-name

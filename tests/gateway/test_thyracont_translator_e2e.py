@@ -14,7 +14,6 @@ import struct
 
 import pytest
 from pymodbus.client import AsyncModbusTcpClient
-
 from scietex.hal.serial.gateway.config import GatewayConfig, GatewayDeviceConfig
 from scietex.hal.serial.gateway.gateway import ModbusGateway
 from scietex.hal.serial.gateway.tcp_server import GatewayTcpServer

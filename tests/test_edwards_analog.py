@@ -6,24 +6,24 @@ initialization, voltage-to-pressure conversion, and atmospheric correction behav
 calibration data from calibration_data.py.
 """
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_almost_equal
 
 try:
-    from src.scietex.hal.vacuum_gauge.edwards import APGMGauge, APGLGauge
-    from src.scietex.hal.vacuum_gauge.edwards.calibration_data import (
-        APG_M_CALIBRATION_DATA,
-        APG_L_CALIBRATION_DATA,
-    )
     from src.scietex.hal.vacuum_gauge.base.atmosphere import Atmosphere
-except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.edwards import APGMGauge, APGLGauge
-    from scietex.hal.vacuum_gauge.edwards.calibration_data import (
-        APG_M_CALIBRATION_DATA,
+    from src.scietex.hal.vacuum_gauge.edwards import APGLGauge, APGMGauge
+    from src.scietex.hal.vacuum_gauge.edwards.calibration_data import (
         APG_L_CALIBRATION_DATA,
+        APG_M_CALIBRATION_DATA,
     )
+except ModuleNotFoundError:
     from scietex.hal.vacuum_gauge.base.atmosphere import Atmosphere
+    from scietex.hal.vacuum_gauge.edwards import APGLGauge, APGMGauge
+    from scietex.hal.vacuum_gauge.edwards.calibration_data import (
+        APG_L_CALIBRATION_DATA,
+        APG_M_CALIBRATION_DATA,
+    )
 
 
 # Tests for APGMGauge

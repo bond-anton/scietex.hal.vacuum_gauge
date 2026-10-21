@@ -12,7 +12,6 @@ Classes:
         into `ThyracontRequest` objects.
 """
 
-from typing import Optional
 from pymodbus import ModbusException
 from pymodbus.pdu import ModbusPDU
 
@@ -25,7 +24,7 @@ class ThyracontDecodePDU(ThyracontRS485DecodePDU):
     Thyracont custom RS485 V2 protocol decoder class.
     """
 
-    def decode(self, frame: bytes) -> Optional[ModbusPDU]:
+    def decode(self, frame: bytes) -> ModbusPDU | None:
         """
         Decode a Thyracont RS485 V2 frame into an `ThyracontRequest` instance.
 
@@ -65,10 +64,10 @@ class ThyracontDecodePDU(ThyracontRS485DecodePDU):
             if pdu_class is None:
                 return None
             pdu = pdu_class(
-                access_code=access_code,  # type: ignore[call-arg]
-                command=command,  # type: ignore[call-arg]
-                data=frame,  # type: ignore[call-arg]
-                state=self.state,  # type: ignore[call-arg]
+                access_code=access_code,  # ty: ignore[unknown-argument]
+                command=command,  # ty: ignore[unknown-argument]
+                data=frame,  # ty: ignore[unknown-argument]
+                state=self.state,  # ty: ignore[unknown-argument]
             )
             pdu.decode(frame)
             pdu.registers = list(frame)[3:]

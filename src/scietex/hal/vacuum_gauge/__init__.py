@@ -12,4 +12,4 @@ which implements the Erstevak RS485 protocol (version 1). Future expansions may 
 manufacturers or protocol versions.
 """
 
-from .version import __version__
+from .version import __version__ as __version__

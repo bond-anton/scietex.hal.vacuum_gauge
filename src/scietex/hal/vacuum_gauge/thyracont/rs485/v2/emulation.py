@@ -14,7 +14,6 @@ Classes:
 """
 
 from logging import Logger
-from typing import Optional
 
 from pymodbus.datastore import ModbusDeviceContext
 from scietex.hal.serial.config import (
@@ -89,8 +88,8 @@ class ThyracontV2Emulator(RS485Server):
     def __init__(
         self,
         con_params: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
-        logger: Optional[Logger] = None,
-        address: Optional[int] = None,
+        logger: Logger | None = None,
+        address: int | None = None,
     ) -> None:
         """
         Initialize a ThyracontV2Emulator instance.
@@ -142,12 +141,12 @@ class ThyracontV2Emulator(RS485Server):
         self._state.gauge_hours = hours
 
     @property
-    def cathode_hours(self) -> Optional[float]:
+    def cathode_hours(self) -> float | None:
         """Get the simulated cathode operating hours (None means no cathode)."""
         return self._state.cathode_hours
 
     @cathode_hours.setter
-    def cathode_hours(self, hours: Optional[float]) -> None:
+    def cathode_hours(self, hours: float | None) -> None:
         """Set the simulated cathode operating hours (None means no cathode)."""
         self._state.cathode_hours = hours
 

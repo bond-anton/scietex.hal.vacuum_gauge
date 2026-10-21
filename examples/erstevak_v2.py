@@ -2,7 +2,6 @@
 
 # pylint: disable=duplicate-code
 
-from typing import Optional
 import asyncio
 import logging
 
@@ -12,14 +11,14 @@ from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 # from scietex.hal.vacuum_gauge.erstevak.rs485.v2.decoder import ErstevakDecodePDU
 # from scietex.hal.vacuum_gauge.erstevak.rs485.v2.framer import ErstevakASCIIFramer
 from scietex.hal.vacuum_gauge.erstevak.rs485.v2 import (
+    DisplayUnits,
     ErstevakVacuumGauge,
     Sensor,
-    DisplayUnits,
 )
 
 
 # pylint: disable=too-many-locals,too-many-statements
-async def main(address: int, client_con: Config, logger: Optional[logging.Logger] = None):
+async def main(address: int, client_con: Config, logger: logging.Logger | None = None):
     """Main function."""
     gauge = ErstevakVacuumGauge(
         address=address,

@@ -13,8 +13,6 @@ Classes:
         execution and response generation.
 """
 
-from typing import Optional
-
 from pymodbus.pdu import ModbusPDU
 
 from .data import AccessCode
@@ -68,12 +66,12 @@ class ThyracontRequest(ModbusPDU):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        access_code: Optional[AccessCode] = None,
-        command: Optional[str] = None,
-        data: Optional[bytes] = None,
+        access_code: AccessCode | None = None,
+        command: str | None = None,
+        data: bytes | None = None,
         dev_id=1,
         transaction_id=0,
-        state: Optional[ThyracontV2State] = None,
+        state: ThyracontV2State | None = None,
     ) -> None:
         """
         Initialize an ThyracontRequest instance.
@@ -102,7 +100,7 @@ class ThyracontRequest(ModbusPDU):
         super().__init__(dev_id=dev_id, transaction_id=transaction_id)
         if access_code is not None:
             self.function_code = access_code.value
-        self._state: Optional[ThyracontV2State] = state
+        self._state: ThyracontV2State | None = state
         self.command: str = ""
         if command is not None and len(command) > 1:
             self.command = command[:2]

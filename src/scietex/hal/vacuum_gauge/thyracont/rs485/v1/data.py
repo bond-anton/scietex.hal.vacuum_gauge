@@ -22,7 +22,6 @@ Functions:
         Decodes a calibration value from a string.
 """
 
-from typing import Optional
 from decimal import Decimal
 
 
@@ -101,7 +100,7 @@ def _pressure_encode(pressure: float) -> str:
     return f"{base:04d}{exp:02d}"
 
 
-def _pressure_decode(data: str) -> Optional[float]:
+def _pressure_decode(data: str) -> float | None:
     """
     Parse pressure (in mbar) from response data.
 
@@ -156,7 +155,7 @@ def _calibration_encode(cal: float) -> str:
     return f"{int(round(cal * 100))}"
 
 
-def _calibration_decode(data: str) -> Optional[float]:
+def _calibration_decode(data: str) -> float | None:
     """
     Decode a calibration value from a string.
 

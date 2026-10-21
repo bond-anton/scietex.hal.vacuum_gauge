@@ -14,7 +14,6 @@ Classes:
 """
 
 from logging import Logger
-from typing import Optional
 
 from pymodbus.datastore import ModbusDeviceContext, ModbusSequentialDataBlock
 from scietex.hal.serial.config import (
@@ -98,8 +97,8 @@ class ThyracontEmulator(RS485Server):
     def __init__(
         self,
         con_params: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
-        logger: Optional[Logger] = None,
-        address: Optional[int] = None,
+        logger: Logger | None = None,
+        address: int | None = None,
     ) -> None:
         """
         Initialize an ThyracontEmulator instance.
@@ -138,7 +137,7 @@ class ThyracontEmulator(RS485Server):
         )
 
     @property
-    def pressure(self) -> Optional[float]:
+    def pressure(self) -> float | None:
         """
         Get the simulated pressure value.
 
@@ -166,7 +165,7 @@ class ThyracontEmulator(RS485Server):
         pressure_to_reg(self._store, p, REG_P)
 
     @property
-    def sp1(self) -> Optional[float]:
+    def sp1(self) -> float | None:
         """
         Get the simulated setpoint 1 pressure.
 
@@ -195,7 +194,7 @@ class ThyracontEmulator(RS485Server):
         pressure_to_reg(self._store, p, REG_SP1)
 
     @property
-    def sp2(self) -> Optional[float]:
+    def sp2(self) -> float | None:
         """
         Get the simulated setpoint 2 pressure.
 
@@ -224,7 +223,7 @@ class ThyracontEmulator(RS485Server):
         pressure_to_reg(self._store, p, REG_SP2)
 
     @property
-    def cal1(self) -> Optional[float]:
+    def cal1(self) -> float | None:
         """
         Get the simulated calibration value 1.
 
@@ -254,7 +253,7 @@ class ThyracontEmulator(RS485Server):
         self._store[REG_CAL1] = cal_encoded
 
     @property
-    def cal2(self) -> Optional[float]:
+    def cal2(self) -> float | None:
         """
         Get the simulated calibration value 2.
 

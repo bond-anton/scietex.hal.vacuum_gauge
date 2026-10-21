@@ -13,30 +13,28 @@ Classes:
         to read and write gauge data.
 """
 
-from typing import Optional
-import sys
 import asyncio
+import sys
 from logging import Logger
 
 import serial
 from pymodbus.pdu import ModbusPDU
-
 from scietex.hal.serial import ModbusOperationError
-from scietex.hal.serial.config import (
-    SerialConnectionConfigModel,
-    ModbusSerialConnectionConfigModel,
-)
 from scietex.hal.serial.client import RS485Client
-
-from .data import (
-    _pressure_encode,
-    _pressure_decode,
-    _calibration_encode,
-    _calibration_decode,
+from scietex.hal.serial.config import (
+    ModbusSerialConnectionConfigModel,
+    SerialConnectionConfigModel,
 )
+
 from ..checksum import check_checksum
-from .framer import ThyracontASCIIFramer
+from .data import (
+    _calibration_decode,
+    _calibration_encode,
+    _pressure_decode,
+    _pressure_encode,
+)
 from .decoder import ThyracontDecodePDU
+from .framer import ThyracontASCIIFramer
 from .request import ThyracontRequest
 
 # Determine the correct TimeoutError based on Python version
@@ -119,10 +117,10 @@ class ThyracontVacuumGauge(RS485Client):
         self,
         connection_config: SerialConnectionConfigModel | ModbusSerialConnectionConfigModel,
         address: int = 1,
-        label: Optional[str] = None,
-        logger: Optional[Logger] = None,
-        timeout: Optional[float] = None,
-        backend: Optional[str] = None,
+        label: str | None = None,
+        logger: Logger | None = None,
+        timeout: float | None = None,
+        backend: str | None = None,
     ) -> None:
         """
         Initialize a ThyracontVacuumGauge client instance.
@@ -166,7 +164,7 @@ class ThyracontVacuumGauge(RS485Client):
             self.backend = "pyserial"
 
     # pylint: disable=duplicate-code
-    async def request_gauge(self, command: str, data: Optional[bytes] = None) -> Optional[str]:
+    async def request_gauge(self, command: str, data: bytes | None = None) -> str | None:
         """
         Send a command to the gauge and return the response data.
 
@@ -193,7 +191,7 @@ class ThyracontVacuumGauge(RS485Client):
         )
         if self.backend == "pymodbus":
             try:
-                response: Optional[ModbusPDU] = await asyncio.wait_for(
+                response: ModbusPDU | None = await asyncio.wait_for(
                     self.execute(request, no_response_expected=False),
                     timeout=self.timeout,
                 )
@@ -229,7 +227,7 @@ class ThyracontVacuumGauge(RS485Client):
             parsed = self._parse_response(serial_response)
             result = parsed["data"]
             con.close()
-        return result
+        return result  # ty: ignore[invalid-return-type]
 
     def _parse_response(self, response: bytes) -> dict:
         """
@@ -273,7 +271,7 @@ class ThyracontVacuumGauge(RS485Client):
                 return result
         return result
 
-    async def get_model(self) -> Optional[str]:
+    async def get_model(self) -> str | None:
         """
         Retrieve the gauge model identifier.
 
@@ -286,7 +284,7 @@ class ThyracontVacuumGauge(RS485Client):
         """
         return await self.request_gauge("T")
 
-    async def measure(self) -> Optional[float]:
+    async def measure(self) -> float | None:
         """
         Measure the current pressure in millibars.
 
@@ -297,12 +295,12 @@ class ThyracontVacuumGauge(RS485Client):
         Optional[float]
             The pressure value in millibars (mbar), or None if the request or decoding fails.
         """
-        gauge_data: Optional[str] = await self.request_gauge("M")
+        gauge_data: str | None = await self.request_gauge("M")
         if gauge_data is not None:
             return _pressure_decode(gauge_data)
         return None
 
-    async def set_pressure(self, pressure: float) -> Optional[float]:
+    async def set_pressure(self, pressure: float) -> float | None:
         """
         Set and return the pressure value.
 
@@ -323,7 +321,7 @@ class ThyracontVacuumGauge(RS485Client):
             return _pressure_decode(gauge_data)
         return None
 
-    async def get_calibration(self, cal_n: int = 1) -> Optional[float]:
+    async def get_calibration(self, cal_n: int = 1) -> float | None:
         """
         Retrieve a calibration coefficient.
 
@@ -344,7 +342,7 @@ class ThyracontVacuumGauge(RS485Client):
             return _calibration_decode(gauge_data)
         return None
 
-    async def set_calibration(self, cal_n: int = 1, value: float = 1.0) -> Optional[float]:
+    async def set_calibration(self, cal_n: int = 1, value: float = 1.0) -> float | None:
         """
         Set a calibration coefficient.
 
@@ -371,7 +369,7 @@ class ThyracontVacuumGauge(RS485Client):
                 return _calibration_decode(data_str)
         return None
 
-    async def get_setpoint(self, sp_n: int = 1) -> Optional[float]:
+    async def get_setpoint(self, sp_n: int = 1) -> float | None:
         """
         Retrieve a setpoint pressure.
 
@@ -392,7 +390,7 @@ class ThyracontVacuumGauge(RS485Client):
             return _pressure_decode(data)
         return None
 
-    async def set_setpoint(self, sp_n: int = 1, pressure: float = 1.0) -> Optional[float]:
+    async def set_setpoint(self, sp_n: int = 1, pressure: float = 1.0) -> float | None:
         """
         Set a setpoint pressure.
 
@@ -420,7 +418,7 @@ class ThyracontVacuumGauge(RS485Client):
                 return _pressure_decode(data_str)
         return None
 
-    async def set_atmosphere(self) -> Optional[float]:
+    async def set_atmosphere(self) -> float | None:
         """
         Set the atmosphere adjustment to 1000 mbar.
 
@@ -441,7 +439,7 @@ class ThyracontVacuumGauge(RS485Client):
                 return _pressure_decode(data_str)
         return None
 
-    async def set_zero(self) -> Optional[float]:
+    async def set_zero(self) -> float | None:
         """
         Set the zero adjustment to 0 mbar.
 
@@ -462,7 +460,7 @@ class ThyracontVacuumGauge(RS485Client):
                 return _pressure_decode(data_str)
         return None
 
-    async def get_penning_state(self) -> Optional[bool]:
+    async def get_penning_state(self) -> bool | None:
         """
         Retrieve the Penning gauge state.
 
@@ -478,7 +476,7 @@ class ThyracontVacuumGauge(RS485Client):
             return bool(int(data))
         return None
 
-    async def set_penning_state(self, state: bool) -> Optional[bool]:
+    async def set_penning_state(self, state: bool) -> bool | None:
         """
         Set the Penning gauge state.
 
@@ -500,7 +498,7 @@ class ThyracontVacuumGauge(RS485Client):
             return bool(int(data_str))
         return None
 
-    async def get_penning_sync(self) -> Optional[bool]:
+    async def get_penning_sync(self) -> bool | None:
         """
         Retrieve the Penning synchronization state.
 
@@ -518,7 +516,7 @@ class ThyracontVacuumGauge(RS485Client):
             return bool(int(data))
         return None
 
-    async def set_penning_sync(self, state: bool) -> Optional[bool]:
+    async def set_penning_sync(self, state: bool) -> bool | None:
         """
         Set the Penning synchronization state.
 

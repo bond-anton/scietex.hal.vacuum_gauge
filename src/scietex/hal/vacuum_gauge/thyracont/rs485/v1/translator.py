@@ -64,7 +64,6 @@ the value register.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from pymodbus.pdu import ModbusPDU
 from pymodbus.pdu.register_message import (
@@ -75,7 +74,6 @@ from pymodbus.pdu.register_message import (
     WriteSingleRegisterRequest,
     WriteSingleRegisterResponse,
 )
-
 from scietex.hal.serial.gateway import GatewayError
 from scietex.hal.serial.utilities.numeric import combine_32bit, split_32bit
 
@@ -87,7 +85,7 @@ _FC_WRITE_SINGLE = WriteSingleRegisterRequest.function_code  # 6
 _FC_WRITE_MULTIPLE = WriteMultipleRegistersRequest.function_code  # 16
 
 # Vendor command (and optional data) and register count for each readable address.
-_READ_COMMAND: dict[int, tuple[str, Optional[bytes], int]] = {
+_READ_COMMAND: dict[int, tuple[str, bytes | None, int]] = {
     0: ("M", None, 2),  # Pressure (32-bit).
     2: ("S", b"1", 2),  # Setpoint 1 (32-bit).
     4: ("S", b"2", 2),  # Setpoint 2 (32-bit).
@@ -141,7 +139,7 @@ class ThyracontV1Translator:
     """
 
     def __init__(self) -> None:
-        self._pending: Optional[_PendingRequest] = None
+        self._pending: _PendingRequest | None = None
 
     def to_vendor(self, request: ModbusPDU) -> ModbusPDU:
         """

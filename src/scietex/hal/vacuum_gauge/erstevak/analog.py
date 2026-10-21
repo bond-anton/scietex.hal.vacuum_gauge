@@ -18,7 +18,6 @@ Key Features:
     - Clamps voltage inputs to reasonable ranges based on gauge specifications.
 """
 
-from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
@@ -63,7 +62,7 @@ class MTP4DGauge(ExponentialVacuumGauge):
         Atmosphere.XE: 1.0,  # Unknown; default value
     }
 
-    def __init__(self, atmosphere: Optional[str | Atmosphere] = None):
+    def __init__(self, atmosphere: str | Atmosphere | None = None):
         """
         Initializes the MTP4DGauge instance.
 
@@ -140,7 +139,7 @@ class MTM9DGauge(ExponentialVacuumGauge):
         Atmosphere.XE: 0.41,
     }
 
-    def __init__(self, atmosphere: Optional[str | Atmosphere] = None):
+    def __init__(self, atmosphere: str | Atmosphere | None = None):
         """
         Initializes the MTM9DGauge instance.
 
