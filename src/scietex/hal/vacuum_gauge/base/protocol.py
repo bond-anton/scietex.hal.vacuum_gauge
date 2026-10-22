@@ -36,6 +36,8 @@ class VacuumGaugeProtocol(Protocol):
         supports_atmosphere (bool): Whether the gauge supports atmosphere
             adjustment.
         supports_zero (bool): Whether the gauge supports zero adjustment.
+        measurement_unit (str): The unit ``measure()`` returns, fixed per
+            driver.
     """
 
     label: str
@@ -45,6 +47,7 @@ class VacuumGaugeProtocol(Protocol):
     supports_calibration: bool = False
     supports_atmosphere: bool = False
     supports_zero: bool = False
+    measurement_unit: str = "mbar"
 
     async def connect(self) -> None:
         """Open the transport to the gauge."""

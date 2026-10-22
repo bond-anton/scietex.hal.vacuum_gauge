@@ -108,6 +108,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
     supports_calibration = True
     supports_atmosphere = True
     supports_zero = True
+    measurement_unit = "mbar"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

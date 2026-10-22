@@ -112,6 +112,8 @@ class ThyracontVacuumGauge(RS485Client):
         Reads and returns a dictionary of gauge data (currently only pressure).
     """
 
+    measurement_unit = "mbar"
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments,duplicate-code
     def __init__(
         self,

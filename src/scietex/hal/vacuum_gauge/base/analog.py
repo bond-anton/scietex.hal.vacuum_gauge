@@ -57,6 +57,8 @@ class ExponentialVacuumGauge(AnalogSensorInterface):
             atmosphere.
     """
 
+    measurement_unit = "mbar"
+
     atmosphere_factor = {
         Atmosphere.AIR: 1.0,
         Atmosphere.AR: 1.0,
@@ -180,6 +182,8 @@ class InterpolationVacuumGauge(LinearInterpolatorSensor):
             Converts analog output voltage to pressure (mbar) using linear interpolation, adjusted
             by atmospheric gas factor, with clamping at specified limits.
     """
+
+    measurement_unit = "mbar"
 
     atmosphere_factor = {
         Atmosphere.AIR: 1.0,

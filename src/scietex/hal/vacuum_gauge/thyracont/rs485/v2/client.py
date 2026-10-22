@@ -134,6 +134,8 @@ class ThyracontVacuumGauge(RS485Client):
     Thyracont vacuum gauge RS485 V2 client.
     """
 
+    measurement_unit = "mbar"
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments,duplicate-code
     def __init__(
         self,
