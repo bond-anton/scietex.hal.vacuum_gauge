@@ -16,11 +16,19 @@ from scietex.hal.serial.config import ModbusSerialConnectionConfig
 
 try:
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v2.client import ThyracontVacuumGauge
-    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v2.data import Sensor
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v2.data import (
+        DisplayOrientation,
+        DisplayUnits,
+        Sensor,
+    )
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v2.emulation import ThyracontV2Emulator
 except ModuleNotFoundError:
     from scietex.hal.vacuum_gauge.thyracont.rs485.v2.client import ThyracontVacuumGauge
-    from scietex.hal.vacuum_gauge.thyracont.rs485.v2.data import Sensor
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v2.data import (
+        DisplayOrientation,
+        DisplayUnits,
+        Sensor,
+    )
     from scietex.hal.vacuum_gauge.thyracont.rs485.v2.emulation import ThyracontV2Emulator
 
 
@@ -217,3 +225,173 @@ async def test_emulator_properties(modbus_config, logger_fixture):
 
 if __name__ == "__main__":
     pytest.main()
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_relay_round_trip(modbus_config, logger_fixture):
+    """Test writing and reading a relay through the semantic surface."""
+    emulator = ThyracontV2Emulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    await emulator.start()
+
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+        connection_config=modbus_config[1],
+        address=1,
+        label="Test Gauge",
+        logger=logger_fixture,
+        timeout=1.0,
+        backend="pymodbus",
+    )
+
+    await client.set_relay(1, {"on": 1e-3, "off": 1e-1, "mode": "pressure", "D": 5})
+    relay = await client.get_relay(1)
+    assert relay is not None
+    assert relay["mode"] == "pressure"
+    assert relay["on"] == pytest.approx(1e-3)
+    assert relay["off"] == pytest.approx(1e-1)
+    assert relay["D"] == 5
+
+    await emulator.stop()
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_relay_mode_switch(modbus_config, logger_fixture):
+    """Test switching a relay to a non-pressure mode."""
+    emulator = ThyracontV2Emulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    await emulator.start()
+
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+        connection_config=modbus_config[1],
+        address=1,
+        label="Test Gauge",
+        logger=logger_fixture,
+        timeout=1.0,
+        backend="pymodbus",
+    )
+
+    await client.set_relay(2, {"mode": "T1"})
+    relay = await client.get_relay(2)
+    assert relay is not None
+    assert relay["mode"] == "T1"
+
+    await emulator.stop()
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_display_controls(modbus_config, logger_fixture):
+    """Test the display unit, orientation and data-source controls."""
+    emulator = ThyracontV2Emulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    await emulator.start()
+
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+        connection_config=modbus_config[1],
+        address=1,
+        label="Test Gauge",
+        logger=logger_fixture,
+        timeout=1.0,
+        backend="pymodbus",
+    )
+
+    await client.set_display_units("torr")
+    assert await client.get_display_units() == DisplayUnits.TORR
+
+    await client.set_display_orientation(1)
+    assert await client.get_display_orientation() == DisplayOrientation.GAUGE_DOWN
+
+    await client.rotate_display()
+    assert await client.get_display_orientation() == DisplayOrientation.GAUGE_UP
+
+    await client.set_display_data_source(Sensor.PIRANI)
+    assert await client.get_display_data_source() == Sensor.PIRANI
+
+    await emulator.stop()
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_penning_and_degas(modbus_config, logger_fixture):
+    """Test the Penning and degas toggles."""
+    emulator = ThyracontV2Emulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    await emulator.start()
+
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+        connection_config=modbus_config[1],
+        address=1,
+        label="Test Gauge",
+        logger=logger_fixture,
+        timeout=1.0,
+        backend="pymodbus",
+    )
+
+    await client.set_penning(True)
+    assert await client.get_penning() is True
+
+    await client.set_degas(True)
+    assert await client.get_degas() is True
+
+    await emulator.stop()
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_device_controls(modbus_config, logger_fixture):
+    """Test panel lock, controller, filament and gas correction."""
+    emulator = ThyracontV2Emulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    await emulator.start()
+
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+        connection_config=modbus_config[1],
+        address=1,
+        label="Test Gauge",
+        logger=logger_fixture,
+        timeout=1.0,
+        backend="pymodbus",
+    )
+
+    await client.set_panel_locked(True)
+    assert await client.get_panel_locked() is True
+
+    await client.set_controller_enabled(True)
+    assert await client.get_controller_enabled() is True
+
+    await client.set_filament_control(2)
+    assert await client.get_filament_control() == 2
+
+    await client.set_gas_correction(Sensor.PIRANI, 1.5)
+    assert await client.get_gas_correction(Sensor.PIRANI) == pytest.approx(1.5)
+
+    await client.set_low_pass_filter(Sensor.PIRANI, 3)
+    assert await client.get_low_pass_filter(Sensor.PIRANI) == 3
+
+    await emulator.stop()
+
+
+# pylint: disable=redefined-outer-name
+@pytest.mark.asyncio
+async def test_reset_to_defaults(modbus_config, logger_fixture):
+    """Test that a factory reset restores the control surface."""
+    emulator = ThyracontV2Emulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
+    await emulator.start()
+
+    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+        connection_config=modbus_config[1],
+        address=1,
+        label="Test Gauge",
+        logger=logger_fixture,
+        timeout=1.0,
+        backend="pymodbus",
+    )
+
+    await client.set_display_units("torr")
+    await client.set_panel_locked(True)
+    await client.set_degas(True)
+
+    await client.reset_to_defaults()
+
+    assert await client.get_display_units() == DisplayUnits.MBAR
+    assert await client.get_panel_locked() is False
+    assert await client.get_degas() is False
+
+    await emulator.stop()

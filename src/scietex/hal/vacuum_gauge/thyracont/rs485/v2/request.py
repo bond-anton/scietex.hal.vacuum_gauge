@@ -190,7 +190,12 @@ class ThyracontRequest(ModbusPDU):
         if state is None:
             raise RuntimeError("ThyracontRequest has no state; datastore_update requires state=")
         try:
-            data: str = parse_command(state, self.command, self.data)
+            data: str = parse_command(
+                state,
+                self.command,
+                self.data,
+                factory_default=self.function_code == AccessCode.FACTORY_DEFAULT.value,
+            )
             access_code: AccessCode = AccessCode.response_for(self.function_code)
         except ValueError as exc:
             data = str(exc)

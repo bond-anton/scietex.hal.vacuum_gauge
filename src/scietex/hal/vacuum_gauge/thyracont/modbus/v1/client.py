@@ -26,12 +26,19 @@ Classes:
 """
 
 from logging import Logger
+from typing import Any
 
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.pdu import ExceptionResponse
 from scietex.hal.serial import ModbusOperationError
 from scietex.hal.serial.utilities.numeric import combine_32bit, split_32bit
 
+from ....base.capabilities import (
+    CalibrationCapabilities,
+    GaugeCapabilities,
+    PenningCapabilities,
+    RelayCapabilities,
+)
 from ....base.protocol import VacuumGaugeProtocol
 from ...rs485.v1.data import _pressure_decode, _pressure_encode
 
@@ -94,20 +101,21 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
     its Modbus unit id. It implements the full V1 control surface: pressure,
     setpoints, calibration, Penning state and Penning sync.
 
+    V1 exposes two pressure-threshold relays (the protocol calls them
+    setpoints), two-point calibration, Penning state and Penning sync. It has no
+    front-panel display registers and no factory-default command, so the display
+    group and ``reset`` stay unsupported.
+
     Attributes:
         label (str): Human-readable gauge label.
-        supports_penning (bool): Always ``True`` for V1.
-        supports_setpoint (bool): Always ``True`` for V1.
-        supports_calibration (bool): Always ``True`` for V1.
-        supports_atmosphere (bool): Always ``True`` for V1.
-        supports_zero (bool): Always ``True`` for V1.
+        capabilities (GaugeCapabilities): The V1 control surface.
     """
 
-    supports_penning = True
-    supports_setpoint = True
-    supports_calibration = True
-    supports_atmosphere = True
-    supports_zero = True
+    capabilities = GaugeCapabilities(
+        penning=PenningCapabilities(state=True, sync=True),
+        relay=RelayCapabilities(count=2, modes=("pressure",)),
+        calibration=CalibrationCapabilities(high=True, low=True),
+    )
     measurement_unit = "mbar"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -374,3 +382,87 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
     async def set_zero(self) -> None:
         """Set the zero adjustment to 0 mbar."""
         await self.set_pressure(1e-3)
+
+    # Semantic protocol surface. V1 calls a pressure-threshold relay a
+    # "setpoint" and a two-point adjustment a "calibration coefficient"; these
+    # methods map the protocol's vocabulary onto the driver's native one so a
+    # caller never has to know which protocol it is talking to.
+
+    async def set_penning(self, state: bool) -> None:
+        """
+        Switch the Penning gauge on or off.
+
+        Args:
+            state: Whether to turn the Penning gauge on.
+        """
+        await self.set_penning_state(state)
+
+    async def get_penning(self) -> bool:
+        """
+        Read the Penning gauge state.
+
+        Returns:
+            bool: Whether the Penning gauge is on.
+        """
+        return await self.get_penning_state()
+
+    async def get_relay(self, index: int) -> dict[str, Any] | None:
+        """
+        Read one relay's settings.
+
+        V1 relays are pressure thresholds, so the result carries ``on`` and
+        ``off`` set to the same pressure and ``mode`` set to ``"pressure"``.
+
+        Args:
+            index: Relay index, 1 or 2.
+
+        Returns:
+            dict[str, Any] | None: Relay settings, or ``None`` when the gauge
+                reports no value.
+        """
+        pressure = await self.get_setpoint(index)
+        if pressure is None:
+            return None
+        return {"on": pressure, "off": pressure, "mode": "pressure"}
+
+    async def set_relay(self, index: int, settings: dict[str, Any]) -> None:
+        """
+        Write one relay's settings.
+
+        Args:
+            index: Relay index, 1 or 2.
+            settings: Relay settings. ``on`` is the threshold pressure in
+                millibars; ``mode`` must be ``"pressure"`` when present.
+
+        Raises:
+            ValueError: If the settings select a mode V1 does not support.
+        """
+        mode = settings.get("mode", "pressure")
+        if mode != "pressure":
+            raise ValueError(f"V1 relays only support the 'pressure' mode, got {mode!r}")
+        await self.set_setpoint(index, settings["on"])
+
+    async def adjust_high(self, pressure: float | None = None) -> None:
+        """
+        Adjust the gauge at a high pressure reference.
+
+        Args:
+            pressure: Reference pressure in millibars. V1 has no adjustable
+                reference, so a value other than the atmosphere point is
+                rejected.
+        """
+        if pressure is not None and pressure != 1000.0:
+            raise ValueError(f"V1 only adjusts high at 1000 mbar, got {pressure}")
+        await self.set_atmosphere()
+
+    async def adjust_low(self, pressure: float | None = None) -> None:
+        """
+        Adjust the gauge at a low pressure reference.
+
+        Args:
+            pressure: Reference pressure in millibars. V1 has no adjustable
+                reference, so a value other than the zero point is rejected.
+        """
+        if pressure is not None and pressure != 1e-3:
+            raise ValueError(f"V1 only adjusts low at 1e-3 mbar, got {pressure}")
+        await self.set_zero()

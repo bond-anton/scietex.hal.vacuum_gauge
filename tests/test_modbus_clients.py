@@ -212,6 +212,67 @@ def test_v1_set_atmosphere_writes_1000_mbar():
     assert stub.calls[0][1] == 0
 
 
+def test_v1_capabilities_are_grouped():
+    """The V1 driver declares its control surface through capability groups."""
+    gauge = ThyracontModbusV1Gauge("127.0.0.1")
+    caps = gauge.capabilities
+    assert caps.penning.state is True
+    assert caps.penning.sync is True
+    assert caps.relay.count == 2
+    assert caps.relay.modes == ("pressure",)
+    assert caps.relay.hysteresis is False
+    assert caps.calibration.high is True
+    assert caps.calibration.low is True
+    assert caps.display.units is False
+    assert caps.reset is False
+
+
+def test_v1_semantic_penning_delegates_to_native():
+    """`set_penning` writes the same register as `set_penning_state`."""
+    stub = _StubClient([_write_response(8, 1)])
+    gauge = _attach(ThyracontModbusV1Gauge("127.0.0.1"), stub)
+    asyncio.run(gauge.set_penning(True))
+    assert stub.calls == [("write", 8, 1, 1)]
+
+
+def test_v1_set_relay_maps_to_setpoint():
+    """`set_relay` writes the setpoint select and value registers."""
+    stub = _StubClient([_write_response(10, 1), _write_many_response(11, 2)])
+    gauge = _attach(ThyracontModbusV1Gauge("127.0.0.1"), stub)
+    asyncio.run(gauge.set_relay(1, {"on": 1.0, "off": 0.5}))
+    assert stub.calls[0] == ("write", 10, 1, 1)
+    assert stub.calls[1][0] == "write_many"
+    assert stub.calls[1][1] == 11
+
+
+def test_v1_set_relay_rejects_non_pressure_mode():
+    """V1 has no non-pressure relay modes, so any other mode is rejected."""
+    gauge = _attach(ThyracontModbusV1Gauge("127.0.0.1"), _StubClient())
+    with pytest.raises(ValueError, match="mode"):
+        asyncio.run(gauge.set_relay(1, {"on": 1.0, "off": 0.5, "mode": "T0"}))
+
+
+def test_v1_adjust_high_rejects_non_atmospheric_pressure():
+    """`adjust_high` only supports the atmospheric reference point."""
+    gauge = _attach(ThyracontModbusV1Gauge("127.0.0.1"), _StubClient())
+    with pytest.raises(ValueError):
+        asyncio.run(gauge.adjust_high(500.0))
+
+
+def test_v1_adjust_low_rejects_non_zero_pressure():
+    """`adjust_low` only supports the zero reference point."""
+    gauge = _attach(ThyracontModbusV1Gauge("127.0.0.1"), _StubClient())
+    with pytest.raises(ValueError):
+        asyncio.run(gauge.adjust_low(1.0))
+
+
+def test_v1_reset_to_defaults_is_unsupported():
+    """V1 has no factory-default register, so reset raises."""
+    gauge = _attach(ThyracontModbusV1Gauge("127.0.0.1"), _StubClient())
+    with pytest.raises(NotImplementedError):
+        asyncio.run(gauge.reset_to_defaults())
+
+
 def test_v1_close_releases_client():
     """`close` closes the underlying client and clears it."""
     stub = _StubClient()

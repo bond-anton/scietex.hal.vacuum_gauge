@@ -334,9 +334,9 @@ def encode_relay_data(rl_data: dict) -> bytes | None:
     try:
         if rl_data["mode"] == "pressure":
             data = f"T{encode_float_1(rl_data['on'])}F{encode_float_1(rl_data['off'])}"
-            if rl_data["D"] is not None:
+            if rl_data.get("D") is not None:
                 data += f"D{int(rl_data['D']):d}"
-            if rl_data["C"] is not None:
+            if rl_data.get("C") is not None:
                 data += f"C{int(rl_data['C']):d}"
         else:
             data = rl_data["mode"]

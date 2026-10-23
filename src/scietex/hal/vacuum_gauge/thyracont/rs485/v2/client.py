@@ -28,6 +28,14 @@ from scietex.hal.serial.config import (
     SerialConnectionConfigModel,
 )
 
+from ....base.capabilities import (
+    CalibrationCapabilities,
+    DisplayCapabilities,
+    FilamentCapabilities,
+    GaugeCapabilities,
+    PenningCapabilities,
+    RelayCapabilities,
+)
 from ..checksum import check_checksum
 from .data import (
     AccessCode,
@@ -132,8 +140,36 @@ def parse_bool(func: Callable) -> Callable:
 class ThyracontVacuumGauge(RS485Client):
     """
     Thyracont vacuum gauge RS485 V2 client.
+
+    V2 is command-oriented and exposes a far wider control surface than the
+    Modbus V1 register map: two relays with selectable modes and hysteresis,
+    two-point adjustment, a front-panel display, degas, filament control, gas
+    correction, panel lock, the internal controller, a low-pass filter and
+    digital I/O logic. Every one of those has a factory-default command, so the
+    gauge also supports a full reset.
+
+    Attributes:
+        capabilities (GaugeCapabilities): The V2 control surface.
     """
 
+    capabilities = GaugeCapabilities(
+        penning=PenningCapabilities(state=True, sync=False),
+        relay=RelayCapabilities(
+            count=2,
+            modes=("pressure", "T0", "T1", "E", "U", "O", "C", "W"),
+            hysteresis=True,
+        ),
+        calibration=CalibrationCapabilities(high=True, low=True),
+        display=DisplayCapabilities(units=True, orientation=True, data_source=True),
+        degas=True,
+        filament=FilamentCapabilities(control=True, number=True),
+        gas_correction=True,
+        panel_lock=True,
+        controller=True,
+        filter=True,
+        digital_logic=True,
+        reset=True,
+    )
     measurement_unit = "mbar"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments,duplicate-code
@@ -458,8 +494,17 @@ class ThyracontVacuumGauge(RS485Client):
     async def set_relay(
         self, rl_n: int, settings: dict[str, float | str | None]
     ) -> dict[str, float | str | None] | None:
-        """Set relay settings."""
+        """
+        Set relay settings.
+
+        Raises:
+            ValueError: If the settings cannot be encoded. Encoding returns
+                ``None`` for a malformed payload, and sending that would be a
+                silent no-op on the wire.
+        """
         data = encode_relay_data(settings)
+        if data is None:
+            raise ValueError(f"Cannot encode relay settings: {settings!r}")
         await self.request_gauge(access_code=AccessCode.WRITE, command=f"R{rl_n}", data=data)
         return await self.get_relay(rl_n)
 
@@ -584,6 +629,11 @@ class ThyracontVacuumGauge(RS485Client):
         await self.request_gauge(
             access_code=AccessCode.WRITE, command="DG", data=f"{int(bool(state))}".encode()
         )
+        return await self.get_degas()
+
+    async def reset_degas(self) -> bool:
+        """Reset degas to its default (off) state."""
+        await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="DG")
         return await self.get_degas()
 
     @parse_bool
@@ -794,6 +844,11 @@ class ThyracontVacuumGauge(RS485Client):
         )
         return await self.get_panel_locked()
 
+    async def reset_panel_locked(self) -> bool:
+        """Reset the panel lock to its default (unlocked) state."""
+        await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="PS")
+        return await self.get_panel_locked()
+
     @parse_bool
     async def get_controller_enabled(self) -> str | None:
         """Retrieve controller enabled/disabled state."""
@@ -804,6 +859,11 @@ class ThyracontVacuumGauge(RS485Client):
         await self.request_gauge(
             access_code=AccessCode.WRITE, command="CS", data=f"{int(bool(enable))}".encode()
         )
+        return await self.get_controller_enabled()
+
+    async def reset_controller_enabled(self) -> bool:
+        """Reset the controller to its default (disabled) state."""
+        await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="CS")
         return await self.get_controller_enabled()
 
     @parse_int
@@ -823,12 +883,19 @@ class ThyracontVacuumGauge(RS485Client):
         return await self.get_low_pass_filter(sensor)
 
     async def reset_low_pass_filter(self, sensor: Sensor | int | None = None) -> int | None:
-        """Reset low-pass filter to default value."""
+        """
+        Reset low-pass filter to default value.
+
+        With no sensor the gauge resets every sensor, so there is no single
+        value to read back and the method returns ``None``.
+        """
         data: bytes | None = None
         if sensor is not None:
             _sensor: Sensor = sensor if isinstance(sensor, Sensor) else Sensor.from_int(sensor)
             data = f"{_sensor.value}".encode()
         await self.request_gauge(access_code=AccessCode.FACTORY_DEFAULT, command="LF", data=data)
+        if sensor is None:
+            return None
         return await self.get_low_pass_filter(sensor)
 
     async def read_data(self) -> dict:
@@ -873,3 +940,51 @@ class ThyracontVacuumGauge(RS485Client):
         if gauge_data is not None:
             return decode_float(gauge_data)
         return None
+
+    # Semantic protocol surface. V2 calls a pressure-threshold relay a "relay"
+    # and a two-point adjustment "adjust high/low"; these methods map the
+    # protocol's vocabulary onto the driver's native one so a caller never has
+    # to know which protocol it is talking to.
+
+    async def set_penning(self, state: bool) -> None:
+        """
+        Switch the Penning (cold cathode) gauge on or off.
+
+        Args:
+            state: Whether to turn the Penning gauge on.
+        """
+        await self.set_cathode_control(state)
+
+    async def get_penning(self) -> bool:
+        """
+        Read the Penning gauge state.
+
+        Returns:
+            bool: Whether the Penning gauge is on.
+        """
+        return bool(await self.get_cathode_control())
+
+    async def reset_to_defaults(self) -> None:
+        """
+        Restore every resettable setting to its factory default.
+
+        V2 exposes a factory-default access code per command, so this walks the
+        full control surface rather than writing guessed values.
+        """
+        for index in (1, 2):
+            await self.reset_relay(index)
+        await self.reset_display_units()
+        await self.reset_display_orientation()
+        await self.reset_display_data_source()
+        await self.reset_digital_logic()
+        await self.reset_degas()
+        await self.reset_cathode_control_mode()
+        await self.reset_cathode_control()
+        await self.reset_filament_control()
+        await self.reset_gas_correction(Sensor.PIRANI)
+        await self.reset_gas_correction(Sensor.PIEZO)
+        await self.reset_low_pass_filter()
+        await self.reset_output_characteristic()
+        await self.reset_sensor_transition()
+        await self.reset_panel_locked()
+        await self.reset_controller_enabled()
