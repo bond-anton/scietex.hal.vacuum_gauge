@@ -9,7 +9,7 @@ communication. The client uses custom framing, decoding, and request handling fr
 calibration, setpoint adjustments, and Penning gauge control.
 
 Classes:
-    ThyracontVacuumGauge: An RS485 client class for Thyracont vacuum gauges, providing methods
+    ThyracontRS485V1Gauge: An RS485 client class for Thyracont vacuum gauges, providing methods
         to read and write gauge data.
 """
 
@@ -46,7 +46,7 @@ else:
     TimeoutErrorAlias = asyncio.exceptions.TimeoutError
 
 
-class ThyracontVacuumGauge(RS485Client):
+class ThyracontRS485V1Gauge(RS485Client):
     """
     Thyracont vacuum gauge RS485 client.
 
@@ -125,7 +125,7 @@ class ThyracontVacuumGauge(RS485Client):
         backend: str | None = None,
     ) -> None:
         """
-        Initialize a ThyracontVacuumGauge client instance.
+        Initialize a ThyracontRS485V1Gauge client instance.
 
         Sets up the client with serial connection parameters, device address, and optional settings
         for label, logger, timeout, and backend. Configures the inherited `RS485Client` with

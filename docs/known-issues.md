@@ -44,7 +44,7 @@ shared port. Not yet decided.
 **Symptom.** A short or empty device response (e.g. `b"0"`) raises
 `IndexError: index out of range` instead of returning `None`.
 
-**Cause.** `ThyracontVacuumGauge._parse_response`
+**Cause.** `ThyracontRS485V1Gauge._parse_response`
 (`src/scietex/hal/vacuum_gauge/thyracont/rs485/v1/client.py`) indexes
 `response[-2]` without first checking the response length. Any frame shorter
 than the minimum frame size crashes the parser.

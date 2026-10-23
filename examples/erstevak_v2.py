@@ -12,7 +12,7 @@ from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 # from scietex.hal.vacuum_gauge.erstevak.rs485.v2.framer import ErstevakASCIIFramer
 from scietex.hal.vacuum_gauge.erstevak.rs485.v2 import (
     DisplayUnits,
-    ErstevakVacuumGauge,
+    ErstevakRS485V2Gauge,
     Sensor,
 )
 
@@ -20,7 +20,7 @@ from scietex.hal.vacuum_gauge.erstevak.rs485.v2 import (
 # pylint: disable=too-many-locals,too-many-statements
 async def main(address: int, client_con: Config, logger: logging.Logger | None = None):
     """Main function."""
-    gauge = ErstevakVacuumGauge(
+    gauge = ErstevakRS485V2Gauge(
         address=address,
         connection_config=client_con,
         logger=logger,

@@ -8,7 +8,7 @@ import time
 from scietex.hal.serial import VirtualSerialPair
 from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 
-from scietex.hal.vacuum_gauge.erstevak.rs485.v1 import ErstevakEmulator, ErstevakVacuumGauge
+from scietex.hal.vacuum_gauge.erstevak.rs485.v1 import ErstevakEmulator, ErstevakRS485V1Gauge
 
 
 # pylint: disable=too-many-statements
@@ -22,7 +22,7 @@ async def main(
     emulator = ErstevakEmulator(server_con, logger=logger, address=address)
     await emulator.start()
 
-    gauge = ErstevakVacuumGauge(
+    gauge = ErstevakRS485V1Gauge(
         client_con,
         address=address,
         label="Erstevak Emulation",

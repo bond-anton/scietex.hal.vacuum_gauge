@@ -9,7 +9,7 @@ pressure measurement, operating-hours and wear statistics, identification querie
 with flexible backends for real hardware (`pymodbus` or `pyserial`).
 
 Classes:
-    ThyracontVacuumGauge: An RS485 client for interacting with a Thyracont vacuum gauge, providing
+    ThyracontRS485V2Gauge: An RS485 client for interacting with a Thyracont vacuum gauge, providing
         methods to read and write gauge data.
     ThyracontV2Emulator: An RS485 server emulator for simulating a Thyracont vacuum gauge, with
         properties to manage simulated data.
@@ -17,7 +17,7 @@ Classes:
         the V2 vendor protocol.
 
 Modules:
-    client: Implements the `ThyracontVacuumGauge` class for real gauge communication.
+    client: Implements the `ThyracontRS485V2Gauge` class for real gauge communication.
     emulation: Implements the `ThyracontV2Emulator` class for gauge simulation.
     emulation_utils: Defines the emulated device state and command parsing.
     data: Provides utilities for encoding and decoding V2 protocol data.
@@ -27,8 +27,8 @@ Modules:
     translator: Implements the `ThyracontV2Translator` gateway plugin.
 """
 
-from .client import ThyracontVacuumGauge
+from .client import ThyracontRS485V2Gauge
 from .emulation import ThyracontV2Emulator
 from .translator import ThyracontV2Translator
 
-__all__ = ["ThyracontVacuumGauge", "ThyracontV2Emulator", "ThyracontV2Translator"]
+__all__ = ["ThyracontRS485V2Gauge", "ThyracontV2Emulator", "ThyracontV2Translator"]

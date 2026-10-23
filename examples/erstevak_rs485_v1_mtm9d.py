@@ -7,7 +7,7 @@ import time
 
 from scietex.hal.serial.config import ModbusSerialConnectionConfig as Config
 
-from scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakVacuumGauge
+from scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakRS485V1Gauge
 
 
 # pylint: disable=duplicate-code
@@ -15,7 +15,7 @@ from scietex.hal.vacuum_gauge.erstevak.rs485.v1.client import ErstevakVacuumGaug
 async def main(address: int, client_con: Config, logger: logging.Logger | None = None):
     """Main coroutine"""
 
-    gauge = ErstevakVacuumGauge(
+    gauge = ErstevakRS485V1Gauge(
         client_con,
         address=address,
         label="Erstevak Emulation",

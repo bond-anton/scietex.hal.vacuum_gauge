@@ -9,13 +9,13 @@ pressure measurement, calibration, setpoint management, and Penning gauge contro
 backends for real hardware (`pymodbus` or `pyserial`) and emulation.
 
 Classes:
-    ErstevakVacuumGauge: An RS485 client for interacting with an Erstevak vacuum gauge, providing
+    ErstevakRS485V1Gauge: An RS485 client for interacting with an Erstevak vacuum gauge, providing
         methods to read and write gauge data.
     ErstevakEmulator: An RS485 server emulator for simulating an Erstevak vacuum gauge, with
         properties to manage simulated data.
 
 Modules:
-    client: Implements the `ErstevakVacuumGauge` class for real gauge communication.
+    client: Implements the `ErstevakRS485V1Gauge` class for real gauge communication.
     emulation: Implements the `ErstevakEmulator` class for gauge simulation.
     data: Provides utilities for encoding and decoding pressure and calibration data.
     decoder: Defines a custom PDU decoder for the Erstevak protocol.
@@ -24,7 +24,7 @@ Modules:
     request: Defines a custom Modbus PDU for Erstevak requests.
 """
 
-from .client import ErstevakVacuumGauge
+from .client import ErstevakRS485V1Gauge
 from .emulation import ErstevakEmulator
 
-__all__ = ["ErstevakVacuumGauge", "ErstevakEmulator"]
+__all__ = ["ErstevakRS485V1Gauge", "ErstevakEmulator"]

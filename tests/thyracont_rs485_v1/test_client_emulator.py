@@ -1,7 +1,7 @@
 """
 Tests for scietex.hal.vacuum_gauge.Thyracont.rs485.v1.client and emulation modules.
 
-This module tests the ThyracontVacuumGauge client against the ThyracontEmulator server, ensuring
+This module tests the ThyracontRS485V1Gauge client against the ThyracontEmulator server, ensuring
 correct communication over the Thyracont RS485 protocol for pressure measurement, calibration,
 setpoints, and Penning gauge control using both 'pymodbus' and 'pyserial' backends.
 """
@@ -15,10 +15,10 @@ from scietex.hal.serial import VirtualSerialPair
 from scietex.hal.serial.config import ModbusSerialConnectionConfig
 
 try:
-    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontVacuumGauge
+    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontRS485V1Gauge
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation import ThyracontEmulator
 except ModuleNotFoundError:
-    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontVacuumGauge
+    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import ThyracontRS485V1Gauge
     from scietex.hal.vacuum_gauge.thyracont.rs485.v1.emulation import ThyracontEmulator
 
 
@@ -64,7 +64,7 @@ async def test_get_model(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -86,7 +86,7 @@ async def test_measure(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -108,7 +108,7 @@ async def test_set_pressure(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -132,7 +132,7 @@ async def test_get_calibration(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -158,7 +158,7 @@ async def test_set_calibration(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -182,7 +182,7 @@ async def test_get_setpoint(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -208,7 +208,7 @@ async def test_set_setpoint(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -232,7 +232,7 @@ async def test_set_atmosphere(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -255,7 +255,7 @@ async def test_set_zero(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -278,7 +278,7 @@ async def test_get_penning_state(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -301,7 +301,7 @@ async def test_set_penning_state(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -324,7 +324,7 @@ async def test_get_penning_sync(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -347,7 +347,7 @@ async def test_set_penning_sync(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -370,7 +370,7 @@ async def test_read_data(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",
@@ -425,7 +425,7 @@ async def test_client_timeout(modbus_config, logger_fixture):
     emulator = ThyracontEmulator(con_params=modbus_config[0], logger=logger_fixture, address=1)
     await emulator.start()
 
-    client: ThyracontVacuumGauge = ThyracontVacuumGauge(
+    client: ThyracontRS485V1Gauge = ThyracontRS485V1Gauge(
         connection_config=modbus_config[1],
         address=1,
         label="Test Gauge",

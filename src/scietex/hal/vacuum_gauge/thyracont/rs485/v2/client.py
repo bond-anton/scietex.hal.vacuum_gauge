@@ -9,7 +9,7 @@ communication. The client uses custom framing, decoding, and request handling fr
 calibration, setpoint adjustments, and Penning gauge control.
 
 Classes:
-    ThyracontVacuumGauge: An RS485 client class for Thyracont vacuum gauges, providing methods
+    ThyracontRS485V2Gauge: An RS485 client class for Thyracont vacuum gauges, providing methods
         to read and write gauge data.
 """
 
@@ -137,7 +137,7 @@ def parse_bool(func: Callable) -> Callable:
 
 
 # pylint: disable=too-many-public-methods
-class ThyracontVacuumGauge(RS485Client):
+class ThyracontRS485V2Gauge(RS485Client):
     """
     Thyracont vacuum gauge RS485 V2 client.
 
@@ -183,7 +183,7 @@ class ThyracontVacuumGauge(RS485Client):
         backend: str | None = None,
     ) -> None:
         """
-        Initialize an ThyracontVacuumGauge client instance.
+        Initialize an ThyracontRS485V2Gauge client instance.
 
         Sets up the client with serial connection parameters, device address, and optional settings
         for label, logger, timeout, and backend. Configures the inherited `RS485Client` with

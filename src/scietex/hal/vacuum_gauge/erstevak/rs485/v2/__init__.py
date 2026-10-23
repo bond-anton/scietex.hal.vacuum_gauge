@@ -9,10 +9,10 @@ from ....thyracont.rs485.v2.data import (
     Sensor,
     StreamingMode,
 )
-from .client import ErstevakVacuumGauge
+from .client import ErstevakRS485V2Gauge
 
 __all__ = [
-    "ErstevakVacuumGauge",
+    "ErstevakRS485V2Gauge",
     "Sensor",
     "DisplayUnits",
     "DisplayOrientation",
