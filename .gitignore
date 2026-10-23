@@ -8,3 +8,6 @@ src/scietex.hal.vacuum_gauge.egg-info
 htmlcov
 __pycache__/
 *.py[cod]
+
+# uv lockfile is stale (predates the ruff/ty toolchain switch)
+uv.lock
