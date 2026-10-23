@@ -19,6 +19,8 @@ class ErstevakModbusV1Gauge(ThyracontModbusV1Gauge):
         label (str): Human-readable gauge label.
     """
 
+    display_name = "Erstevak Modbus V1"
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,

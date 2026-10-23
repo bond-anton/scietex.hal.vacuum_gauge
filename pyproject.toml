@@ -23,6 +23,14 @@ dependencies = [
     "pymodbus[serial] ~= 3.15",
 ]
 
+[project.entry-points."scietex.hal.vacuum_gauge.drivers"]
+thyracont_modbus_v1 = "scietex.hal.vacuum_gauge.thyracont.modbus.v1:ThyracontModbusV1Gauge"
+thyracont_modbus_v2 = "scietex.hal.vacuum_gauge.thyracont.modbus.v2:ThyracontModbusV2Gauge"
+thyracont_rs485_v2 = "scietex.hal.vacuum_gauge.thyracont.rs485.v2:ThyracontRS485V2Gauge"
+erstevak_modbus_v1 = "scietex.hal.vacuum_gauge.erstevak.modbus.v1:ErstevakModbusV1Gauge"
+erstevak_modbus_v2 = "scietex.hal.vacuum_gauge.erstevak.modbus.v2:ErstevakModbusV2Gauge"
+erstevak_rs485_v2 = "scietex.hal.vacuum_gauge.erstevak.rs485.v2:ErstevakRS485V2Gauge"
+
 [project.urls]
 "Homepage" = "https://github.com/bond-anton/scietex.hal.vacuum_gauge"
 "Bug Tracker" = "https://github.com/bond-anton/scietex.hal.vacuum_gauge/issues"

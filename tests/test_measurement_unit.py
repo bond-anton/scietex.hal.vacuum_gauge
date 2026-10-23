@@ -31,9 +31,6 @@ try:
     from src.scietex.hal.vacuum_gauge.thyracont.modbus.v2.client import (
         ThyracontModbusV2Gauge,
     )
-    from src.scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import (
-        ThyracontRS485V1Gauge,
-    )
     from src.scietex.hal.vacuum_gauge.thyracont.rs485.v2.client import (
         ThyracontRS485V2Gauge,
     )
@@ -47,9 +44,6 @@ except ModuleNotFoundError:
     from scietex.hal.vacuum_gauge.erstevak.modbus.v2.client import ErstevakModbusV2Gauge
     from scietex.hal.vacuum_gauge.thyracont.modbus.v1.client import ThyracontModbusV1Gauge
     from scietex.hal.vacuum_gauge.thyracont.modbus.v2.client import ThyracontModbusV2Gauge
-    from scietex.hal.vacuum_gauge.thyracont.rs485.v1.client import (
-        ThyracontRS485V1Gauge,
-    )
     from scietex.hal.vacuum_gauge.thyracont.rs485.v2.client import (
         ThyracontRS485V2Gauge,
     )
@@ -70,7 +64,6 @@ def test_protocol_measurement_unit_is_a_member():
     [
         ThyracontModbusV1Gauge,
         ThyracontModbusV2Gauge,
-        ThyracontRS485V1Gauge,
         ThyracontRS485V2Gauge,
     ],
 )

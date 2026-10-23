@@ -77,6 +77,7 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
     supports_atmosphere = False
     supports_zero = False
     measurement_unit = "mbar"
+    display_name = "Thyracont Modbus V2"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

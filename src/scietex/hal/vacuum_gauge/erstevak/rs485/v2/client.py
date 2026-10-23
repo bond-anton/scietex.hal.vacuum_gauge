@@ -10,3 +10,5 @@ class ErstevakRS485V2Gauge(ThyracontRS485V2Gauge):
     """
     Erstevak vacuum gauge RS485 V2 client.
     """
+
+    display_name = "Erstevak RS485 V2"
