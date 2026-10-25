@@ -19,7 +19,7 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "scietex.hal.analog-sensor >= 1.0.0, < 2.0.0",
-    "scietex.hal.serial >= 2.0.0, < 3.0.0",
+    "scietex.hal.serial >= 2.3.0, < 3.0.0",
     "pymodbus[serial] ~= 3.15",
 ]
 
@@ -30,6 +30,10 @@ thyracont_rs485_v2 = "scietex.hal.vacuum_gauge.thyracont.rs485.v2:ThyracontRS485
 erstevak_modbus_v1 = "scietex.hal.vacuum_gauge.erstevak.modbus.v1:ErstevakModbusV1Gauge"
 erstevak_modbus_v2 = "scietex.hal.vacuum_gauge.erstevak.modbus.v2:ErstevakModbusV2Gauge"
 erstevak_rs485_v2 = "scietex.hal.vacuum_gauge.erstevak.rs485.v2:ErstevakRS485V2Gauge"
+
+[project.entry-points."scietex.modbus.drivers"]
+thyracont_rs485_v1 = "scietex.hal.vacuum_gauge.modbus_drivers:thyracont_rs485_v1"
+erstevak_rs485_v1 = "scietex.hal.vacuum_gauge.modbus_drivers:erstevak_rs485_v1"
 
 [project.urls]
 "Homepage" = "https://github.com/bond-anton/scietex.hal.vacuum_gauge"
