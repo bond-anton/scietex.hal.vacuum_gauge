@@ -110,6 +110,16 @@ def test_pressure_decode_zero():
     assert _pressure_decode("000019") == 0.0  # 0000 * 10^(19-23)
 
 
+def test_pressure_decode_over_range_sentinel():
+    """The over-range sentinel decodes to the V2 over-range value, not 9.999e+79."""
+    assert _pressure_decode("999999") == 999999.0
+
+
+def test_pressure_decode_under_range_sentinel():
+    """The under-range sentinel decodes to zero, matching the V2 convention."""
+    assert _pressure_decode("000000") == 0.0
+
+
 def test_pressure_decode_invalid():
     """Test pressure decoding with invalid inputs."""
     assert _pressure_decode("abc123") is None  # Non-numeric

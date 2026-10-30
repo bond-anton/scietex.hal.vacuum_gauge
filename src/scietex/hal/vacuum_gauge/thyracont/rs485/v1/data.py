@@ -117,6 +117,9 @@ def _pressure_decode(data: str) -> float | None:
     -------
     Optional[float]
         The decoded pressure value in millibars (mbar), or None if parsing fails.
+        The over-range sentinel ``999999`` decodes to ``999999.0`` and the
+        under-range sentinel ``000000`` to ``0.0``, matching the V2 convention
+        (``OR``/``UR`` in :func:`...v2.data.decode_float`).
 
     Raises
     ------
@@ -128,6 +131,14 @@ def _pressure_decode(data: str) -> float | None:
     try:
         if len(data) != 6:
             return None
+        # The gauge reports out-of-range readings as sentinels rather than a
+        # numeric value: 999999 is over-range, 000000 is under-range. Decoding
+        # them as mantissa/exponent would yield 9.999e+79, which is not a
+        # pressure and would poison downstream unit conversion.
+        if data == "999999":
+            return 999999.0
+        if data == "000000":
+            return 0.0
         base: int = int(data[:4])
         exp: int = int(data[4:]) - 23
         return float(base * 10**exp)

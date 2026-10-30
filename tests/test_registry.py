@@ -28,9 +28,11 @@ except ModuleNotFoundError:
 _EXPECTED_NAMES = {
     "erstevak_modbus_v1",
     "erstevak_modbus_v2",
+    "erstevak_rs485_v1",
     "erstevak_rs485_v2",
     "thyracont_modbus_v1",
     "thyracont_modbus_v2",
+    "thyracont_rs485_v1",
     "thyracont_rs485_v2",
 }
 
