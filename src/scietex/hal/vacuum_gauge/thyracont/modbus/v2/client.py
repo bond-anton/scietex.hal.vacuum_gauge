@@ -168,6 +168,29 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
             )
         return _registers_to_float(list(response.registers))
 
+    async def _read_optional_float(self, address: int) -> float | None:
+        """
+        Read a float32 value, returning ``None`` when the gauge has no such value.
+
+        The gateway answers a register the device cannot serve with an exception
+        response rather than a fabricated value: a gauge without a cold cathode
+        has no cathode-hours register, so reading address 4 raises. A snapshot
+        must not lose the values it did read because one register is absent.
+
+        Args:
+            address: Starting register address.
+
+        Returns:
+            Optional[float]: The decoded value, or ``None`` when the gauge
+                reports no value for this register.
+        """
+        try:
+            return await self._read_float(address)
+        except ModbusOperationError as exc:
+            if self.logger is not None:
+                self.logger.debug("Register %s is not available: %s", address, exc)
+            return None
+
     async def measure(self) -> float | None:
         """
         Read the current pressure.
@@ -181,14 +204,24 @@ class ThyracontModbusV2Gauge(VacuumGaugeProtocol):
         """
         Read a snapshot of the gauge's current values.
 
+        Pressure is mandatory and raises if it cannot be read. The statistics
+        registers are optional: a gauge without a cold cathode has no
+        cathode-hours register, so that key is omitted rather than failing the
+        whole snapshot.
+
         Returns:
-            dict: ``pressure`` in millibars, plus operating hours and Pirani
-                wear statistics.
+            dict: ``pressure`` in millibars, plus whichever of the operating
+                hours and Pirani wear statistics the gauge reports.
         """
-        return {
-            "pressure": await self._read_float(_REG_PRESSURE),
-            "gauge_hours": await self._read_float(_REG_GAUGE_HOURS),
-            "cathode_hours": await self._read_float(_REG_CATHODE_HOURS),
-            "pirani_wear": await self._read_float(_REG_PIRANI_WEAR),
-            "pirani_hours": await self._read_float(_REG_PIRANI_HOURS),
+        data: dict[str, float | None] = {"pressure": await self._read_float(_REG_PRESSURE)}
+        optional = {
+            "gauge_hours": _REG_GAUGE_HOURS,
+            "cathode_hours": _REG_CATHODE_HOURS,
+            "pirani_wear": _REG_PIRANI_WEAR,
+            "pirani_hours": _REG_PIRANI_HOURS,
         }
+        for key, address in optional.items():
+            value = await self._read_optional_float(address)
+            if value is not None:
+                data[key] = value
+        return data

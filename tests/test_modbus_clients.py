@@ -351,6 +351,39 @@ def test_v2_read_data_reads_all_fields():
     assert [call[1] for call in stub.calls] == [0, 2, 4, 6, 8]
 
 
+def test_v2_read_data_omits_absent_cathode_hours():
+    """A cathode-less gauge omits the cathode key instead of failing the snapshot.
+
+    The gateway answers a register the device cannot serve with an exception
+    response, so reading address 4 raises. The pressure and the other
+    statistics must still be returned.
+    """
+    raw = struct.pack(">f", 1.0)
+    word = struct.unpack(">I", raw)[0]
+    registers = list(split_32bit(word, ByteOrder.BIG_ENDIAN))
+    stub = _StubClient(
+        [
+            _read_response(registers),  # pressure
+            _read_response(registers),  # gauge hours
+            ExceptionResponse(3, 2),  # cathode hours: illegal data address
+            _read_response(registers),  # pirani wear
+            _read_response(registers),  # pirani hours
+        ]
+    )
+    gauge = _attach(ThyracontModbusV2Gauge("127.0.0.1"), stub)
+    data = asyncio.run(gauge.read_data())
+    assert set(data) == {"pressure", "gauge_hours", "pirani_wear", "pirani_hours"}
+    assert data["pressure"] == pytest.approx(1.0)
+
+
+def test_v2_read_data_raises_when_pressure_unreadable():
+    """Pressure is mandatory: a failed pressure read still raises."""
+    stub = _StubClient([ExceptionResponse(3, 2)])
+    gauge = _attach(ThyracontModbusV2Gauge("127.0.0.1"), stub)
+    with pytest.raises(ModbusOperationError):
+        asyncio.run(gauge.read_data())
+
+
 def test_v2_has_no_control_capabilities():
     """The read-only V2 protocol advertises no control capabilities."""
     gauge = ThyracontModbusV2Gauge("127.0.0.1")
