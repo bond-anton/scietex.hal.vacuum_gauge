@@ -34,6 +34,8 @@ erstevak_rs485_v2 = "scietex.hal.vacuum_gauge.erstevak.rs485.v2:ErstevakRS485V2G
 [project.entry-points."scietex.modbus.drivers"]
 thyracont_rs485_v1 = "scietex.hal.vacuum_gauge.modbus_drivers:thyracont_rs485_v1"
 erstevak_rs485_v1 = "scietex.hal.vacuum_gauge.modbus_drivers:erstevak_rs485_v1"
+thyracont_rs485_v2 = "scietex.hal.vacuum_gauge.modbus_drivers:thyracont_rs485_v2"
+erstevak_rs485_v2 = "scietex.hal.vacuum_gauge.modbus_drivers:erstevak_rs485_v2"
 
 [project.urls]
 "Homepage" = "https://github.com/bond-anton/scietex.hal.vacuum_gauge"
