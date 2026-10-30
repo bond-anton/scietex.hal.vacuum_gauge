@@ -71,14 +71,15 @@ binary (2 bytes).
 
 > **Conformance note.** AC `6` is reserved for *streaming-mode* responses
 > only. A normal read response must carry AC `1`, and a normal write response
-> AC `3`. The `AccessCode` enum in `v2/data.py` defines only the send codes
-> (`READ=0`, `WRITE=2`, `FACTORY_DEFAULT=4`, `BINARY=8`) plus the receive codes
-> `STREAMING=6` and `ERROR=7`; it omits the receive codes `1`, `3`, `5`, `9`.
-> As a result the emulator (`v2/request.py:195`) answers every successful
-> command with AC `6`. Verified: a read `MV` returns AC `6`, not `1`. The
-> client (`v2/client.py:213`) only special-cases AC `7`, so it tolerates the
-> wrong code — the defect only surfaces against real hardware or a strict
-> conformance test.
+> AC `3`. The `AccessCode` enum in `v2/data.py` defines all four send codes
+> (`READ=0`, `WRITE=2`, `FACTORY_DEFAULT=4`, `BINARY=8`) and all four matching
+> receive codes (`READ_RESPONSE=1`, `WRITE_RESPONSE=3`,
+> `FACTORY_DEFAULT_RESPONSE=5`, `BINARY_RESPONSE=9`), plus `STREAMING=6` and
+> `ERROR=7`. `AccessCode.response_for` maps each send code to its receive code,
+> and the emulator (`v2/request.py`) answers through it, so a read `MV` returns
+> AC `1` and a write returns AC `3`. The client (`v2/client.py`) only
+> special-cases AC `7` (error); it does not verify the success code, so a
+> transmitter that answered with the wrong one would not be caught.
 
 ## 3. Checksum (CS)
 
