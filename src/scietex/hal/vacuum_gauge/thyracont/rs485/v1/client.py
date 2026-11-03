@@ -199,6 +199,7 @@ class ThyracontRS485V1Gauge(RS485Client, VacuumGaugeProtocol):
     )
     measurement_unit = "mbar"
     display_name = "Thyracont RS485 V1"
+    transport = "rs485"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

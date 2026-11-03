@@ -118,6 +118,7 @@ class ThyracontModbusV1Gauge(VacuumGaugeProtocol):
     )
     measurement_unit = "mbar"
     display_name = "Thyracont Modbus V1"
+    transport = "modbus_tcp"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

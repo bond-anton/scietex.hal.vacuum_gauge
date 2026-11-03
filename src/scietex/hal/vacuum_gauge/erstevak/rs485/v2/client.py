@@ -53,3 +53,4 @@ class ErstevakRS485V2Gauge(ThyracontRS485V2Gauge):
     )
 
     display_name = "Erstevak RS485 V2"
+    transport = "rs485"

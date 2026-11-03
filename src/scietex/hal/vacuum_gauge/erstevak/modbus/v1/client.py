@@ -20,6 +20,7 @@ class ErstevakModbusV1Gauge(ThyracontModbusV1Gauge):
     """
 
     display_name = "Erstevak Modbus V1"
+    transport = "modbus_tcp"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

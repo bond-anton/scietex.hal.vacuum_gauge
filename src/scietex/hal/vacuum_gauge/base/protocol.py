@@ -42,12 +42,20 @@ class VacuumGaugeProtocol(Protocol):
             function.
         measurement_unit (str): The unit ``measure()`` returns, fixed per
             driver.
+        transport (str): The bus the driver speaks on, either ``"modbus_tcp"``
+            (a Modbus/TCP gateway endpoint) or ``"rs485"`` (a serial RS485
+            bus). Consumers use it to offer only the drivers they can
+            instantiate: the vacuum gauge service reaches gauges through the
+            Modbus gateway and so accepts ``"modbus_tcp"`` only, while the
+            gateway itself drives the serial bus and so accepts ``"rs485"``
+            only.
     """
 
     label: str
 
     capabilities: GaugeCapabilities = GaugeCapabilities()
     measurement_unit: str = "mbar"
+    transport: str = "modbus_tcp"
 
     @property
     def supports_penning(self) -> bool:
